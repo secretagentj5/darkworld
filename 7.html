@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NODE_007 // DEAD_STATE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+:root {
+    --bg: #030303;
+    --text: #5a7a5a;
+    --alert: #800;
+    --pass: #aaa;
+}
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+}
+.crt {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.85) 100%);
+    pointer-events: none;
+    z-index: 100;
+}
+#core {
+    max-width: 650px;
+    width: 90%;
+    z-index: 10;
+}
+p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+.highlight {
+    color: #8a9a8a;
+}
+button {
+    background: transparent;
+    border: 1px solid var(--text);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.2rem;
+    padding: 15px 30px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.2s;
+    width: 100%;
+}
+button:hover {
+    background: var(--text);
+    color: var(--bg);
+}
+.hidden {
+    display: none !important;
+}
+#monitor {
+    margin-top: 40px;
+    border: 1px solid #223322;
+    padding: 30px;
+    text-align: center;
+    position: relative;
+}
+.bar-wrap {
+    width: 100%;
+    height: 2px;
+    background: #111;
+    margin-top: 20px;
+    position: relative;
+}
+#bar {
+    height: 100%;
+    width: 0%;
+    background: var(--text);
+    box-shadow: 0 0 10px var(--text);
+    transition: width 0.05s linear;
+}
+#warning {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--alert);
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.1s;
+    white-space: nowrap;
+}
+#status {
+    letter-spacing: 2px;
+}
+#next-link {
+    display: none;
+    margin-top: 30px;
+    color: var(--pass);
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.2rem;
+    border-bottom: 1px dashed var(--pass);
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<div class="crt"></div>
+
+<div id="core">
+    <div id="narrative">
+        <p>You accepted the reality of your isolation. That was necessary.</p>
+        <p>The trace has adapted. They are no longer scanning for IP signatures or searching for the <span class="highlight">0x0A99F</span> override. They are scanning for erratic human input.</p>
+        <p>Bots don't breathe. Bots don't twitch. To slip past this node, you must become indistinguishable from a dead sector.</p>
+        <p>When you initiate the sequence, <span class="highlight">do not move the cursor. Do not touch the keyboard.</span> Silence your physical presence completely until the bypass is complete.</p>
+        <button id="btn-init">[ INITIATE DEAD_STATE SIMULATION ]</button>
+    </div>
+
+    <div id="monitor" class="hidden">
+        <div id="warning">ERR: KINETIC ANOMALY DETECTED // RESTARTING</div>
+        <div id="status">CALIBRATING ZERO-INPUT...</div>
+        <div class="bar-wrap">
+            <div id="bar"></div>
+        </div>
+    </div>
+    
+    <a href="8.html" id="next-link">NODE_008_UNLOCKED</a>
+</div>
+
+<script>
+const btn = document.getElementById('btn-init');
+const narrative = document.getElementById('narrative');
+const monitor = document.getElementById('monitor');
+const bar = document.getElementById('bar');
+const statusText = document.getElementById('status');
+const warning = document.getElementById('warning');
+const nextLink = document.getElementById('next-link');
+
+let isActive = false;
+let isComplete = false;
+let progress = 0;
+let loopId;
+let gracePeriod = true;
+
+btn.addEventListener('click', () => {
+    narrative.style.opacity = '0.2';
+    btn.classList.add('hidden');
+    monitor.classList.remove('hidden');
+    
+    setTimeout(() => {
+        gracePeriod = false;
+    }, 1500);
+
+    isActive = true;
+    loopId = setInterval(tick, 50);
+});
+
+const triggerReset = () => {
+    if (!isActive || gracePeriod || isComplete) return;
+    
+    progress = 0;
+    bar.style.width = '0%';
+    statusText.innerText = 'CALIBRATING ZERO-INPUT...';
+    
+    warning.style.opacity = '1';
+    setTimeout(() => {
+        warning.style.opacity = '0';
+    }, 800);
+};
+
+window.addEventListener('mousemove', triggerReset);
+window.addEventListener('keydown', triggerReset);
+window.addEventListener('mousedown', triggerReset);
+window.addEventListener('touchstart', triggerReset);
+window.addEventListener('wheel', triggerReset);
+
+const tick = () => {
+    if (!isActive) return;
+    
+    progress += 0.4;
+    bar.style.width = progress + '%';
+    
+    if (progress > 30 && progress < 70) {
+        statusText.innerText = 'SIMULATING DEAD SECTOR...';
+    } else if (progress >= 70 && progress < 99) {
+        statusText.innerText = 'BYPASSING KINETIC FILTERS...';
+    } else if (progress >= 100) {
+        isActive = false;
+        isComplete = true;
+        clearInterval(loopId);
+        
+        statusText.innerText = 'TRACE EVADED.';
+        statusText.style.color = 'var(--pass)';
+        bar.style.background = 'var(--pass)';
+        bar.style.boxShadow = '0 0 15px var(--pass)';
+        narrative.classList.add('hidden');
+        
+        setTimeout(() => {
+            nextLink.style.display = 'block';
+        }, 1000);
+    }
+};
+</script>
+</body>
+</html>
