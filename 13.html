@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_013 // THE_TREATY</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+      body {
+        background-color: #0d1114;
+        color: #a4b5c4;
+        font-family: "Share Tech Mono", monospace;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        user-select: none;
+      }
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(
+          circle,
+          rgba(0, 0, 0, 0) 30%,
+          rgba(0, 0, 0, 0.9) 100%
+        );
+        pointer-events: none;
+        z-index: 100;
+      }
+      .grain {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
+        opacity: 0.04;
+        pointer-events: none;
+        z-index: 99;
+      }
+      #interface {
+        display: flex;
+        flex-direction: row;
+        gap: 40px;
+        z-index: 10;
+        background: #12181c;
+        padding: 30px;
+        border: 1px solid #23313a;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+        max-width: 900px;
+      }
+      .panel {
+        display: flex;
+        flex-direction: column;
+      }
+      .title {
+        font-size: 1.2rem;
+        color: #5c7e96;
+        border-bottom: 1px solid #23313a;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        letter-spacing: 2px;
+      }
+      #map-container {
+        position: relative;
+        width: 450px;
+        height: 450px;
+        background: #080c0f;
+        border: 1px solid #34495e;
+        cursor: crosshair;
+      }
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      .sidebar {
+        width: 300px;
+        justify-content: space-between;
+      }
+      .coords {
+        font-size: 1.5rem;
+        color: #e74c3c;
+        margin-bottom: 20px;
+        background: #0a0e11;
+        padding: 15px;
+        border: 1px solid #23313a;
+        text-align: center;
+        letter-spacing: 4px;
+      }
+      .story {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #8397a6;
+        margin-bottom: 20px;
+      }
+      #clue-box {
+        color: #e67e22;
+        font-size: 0.9rem;
+        min-height: 60px;
+        margin-bottom: 20px;
+        border-left: 3px solid #e67e22;
+        padding-left: 10px;
+        display: none;
+      }
+      button {
+        background: transparent;
+        border: 1px solid #5c7e96;
+        color: #a4b5c4;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 1.1rem;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      button:hover {
+        background: #5c7e96;
+        color: #000;
+      }
+      button:active {
+        background: #e74c3c;
+        border-color: #e74c3c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="overlay"></div>
+    <div class="grain"></div>
+
+    <div id="interface">
+      <div class="panel">
+        <div class="title">CARTOGRAPHIC_ARCHIVE // SECTOR_V</div>
+        <div id="map-container">
+          <canvas id="gridCanvas" width="450" height="450"></canvas>
+          <canvas id="uiCanvas" width="450" height="450"></canvas>
+        </div>
+      </div>
+
+      <div class="panel sidebar">
+        <div>
+          <div class="story">
+            The old world was shattered, and the architects gathered to draw the
+            lines of the new one. They thought their ink would prevent another
+            slaughter.
+          </div>
+          <div class="story">
+            But the geometry was cursed from the moment the treaty was signed.
+            You must isolate the precise nexus point of the rot. Pinpoint the
+            temporal coordinates on the spatial grid.
+          </div>
+
+          <div id="clue-box"></div>
+        </div>
+
+        <div>
+          <div class="coords">
+            X:<span id="val-x">00</span> Y:<span id="val-y">00</span>
+          </div>
+          <button id="btn-submit">RATIFY BORDER</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const gridCanvas = document.getElementById("gridCanvas");
+      const gCtx = gridCanvas.getContext("2d");
+      const uiCanvas = document.getElementById("uiCanvas");
+      const uCtx = uiCanvas.getContext("2d");
+      const mapContainer = document.getElementById("map-container");
+      const valX = document.getElementById("val-x");
+      const valY = document.getElementById("val-y");
+      const btnSubmit = document.getElementById("btn-submit");
+      const clueBox = document.getElementById("clue-box");
+
+      const gridSize = 31;
+      const cellSize = 450 / gridSize;
+      let cx = 15;
+      let cy = 15;
+      let failures = 0;
+
+      const clues = [
+        "The coordinates are temporal. The map reflects a date. When did the architects of the new world dry their ink?",
+        "The guns of the Great War fell silent in 1918, but this treaty was forged in the Hall of Mirrors the following year.",
+        "Look to the summer. The ink was signed exactly five years to the day after the Archduke's assassination in Sarajevo (1914).",
+        "The Treaty of Versailles. X is the day. Y is the month. June 28th.",
+      ];
+
+      function drawGrid() {
+        gCtx.fillStyle = "#080c0f";
+        gCtx.fillRect(0, 0, 450, 450);
+        gCtx.strokeStyle = "#152029";
+        gCtx.lineWidth = 1;
+
+        for (let i = 0; i <= gridSize; i++) {
+          gCtx.beginPath();
+          gCtx.moveTo(i * cellSize, 0);
+          gCtx.lineTo(i * cellSize, 450);
+          gCtx.stroke();
+
+          gCtx.beginPath();
+          gCtx.moveTo(0, i * cellSize);
+          gCtx.lineTo(450, i * cellSize);
+          gCtx.stroke();
+        }
+
+        gCtx.strokeStyle = "#23313a";
+        for (let i = 0; i <= gridSize; i += 5) {
+          gCtx.beginPath();
+          gCtx.moveTo(i * cellSize, 0);
+          gCtx.lineTo(i * cellSize, 450);
+          gCtx.stroke();
+
+          gCtx.beginPath();
+          gCtx.moveTo(0, i * cellSize);
+          gCtx.lineTo(450, i * cellSize);
+          gCtx.stroke();
+        }
+      }
+
+      function drawCrosshair() {
+        uCtx.clearRect(0, 0, 450, 450);
+
+        const px = cx * cellSize;
+        const py = cy * cellSize;
+
+        uCtx.strokeStyle = "rgba(231, 76, 60, 0.3)";
+        uCtx.lineWidth = 1;
+        uCtx.beginPath();
+        uCtx.moveTo(px, 0);
+        uCtx.lineTo(px, 450);
+        uCtx.stroke();
+        uCtx.beginPath();
+        uCtx.moveTo(0, py);
+        uCtx.lineTo(450, py);
+        uCtx.stroke();
+
+        uCtx.strokeStyle = "#e74c3c";
+        uCtx.lineWidth = 2;
+        uCtx.beginPath();
+        uCtx.arc(px, py, 10, 0, Math.PI * 2);
+        uCtx.stroke();
+
+        uCtx.beginPath();
+        uCtx.moveTo(px - 15, py);
+        uCtx.lineTo(px + 15, py);
+        uCtx.stroke();
+        uCtx.beginPath();
+        uCtx.moveTo(px, py - 15);
+        uCtx.lineTo(px, py + 15);
+        uCtx.stroke();
+
+        valX.innerText = cx.toString().padStart(2, "0");
+        valY.innerText = cy.toString().padStart(2, "0");
+      }
+
+      function updatePos(e) {
+        const rect = mapContainer.getBoundingClientRect();
+        let clientX, clientY;
+
+        if (e.touches) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        cx = Math.max(1, Math.min(gridSize, Math.round(x / cellSize)));
+        cy = Math.max(1, Math.min(gridSize, Math.round(y / cellSize)));
+
+        drawCrosshair();
+      }
+
+      mapContainer.addEventListener("mousedown", (e) => {
+        updatePos(e);
+        mapContainer.addEventListener("mousemove", updatePos);
+      });
+      window.addEventListener("mouseup", () => {
+        mapContainer.removeEventListener("mousemove", updatePos);
+      });
+      mapContainer.addEventListener(
+        "touchstart",
+        (e) => {
+          e.preventDefault();
+          updatePos(e);
+          mapContainer.addEventListener("touchmove", updatePos);
+        },
+        { passive: false },
+      );
+      window.addEventListener("touchend", () => {
+        mapContainer.removeEventListener("touchmove", updatePos);
+      });
+
+      btnSubmit.addEventListener("click", () => {
+        if (cx * 17 + cy * 11 === 542 && cx * 3 - cy * 5 === 54) {
+          btnSubmit.style.background = "#27ae60";
+          btnSubmit.style.color = "#fff";
+          btnSubmit.style.borderColor = "#27ae60";
+          btnSubmit.innerText = "COORDINATE LOCKED";
+          clueBox.style.display = "block";
+          clueBox.style.color = "#27ae60";
+          clueBox.style.borderColor = "#27ae60";
+          clueBox.innerText =
+            "Nexus identified. The rot spreads from the Hall of Mirrors. Proceeding...";
+
+          setTimeout(() => {
+            document.body.style.transition = "opacity 2s";
+            document.body.style.opacity = "0";
+            setTimeout(() => {
+              window.location.href = "14.html";
+            }, 2000);
+          }, 1500);
+        } else {
+          btnSubmit.style.background = "#e74c3c";
+          btnSubmit.style.color = "#fff";
+          btnSubmit.innerText = "INVALID BORDER";
+
+          clueBox.style.display = "block";
+          if (failures < clues.length) {
+            clueBox.innerText = ">> ERR: " + clues[failures];
+          } else {
+            clueBox.innerText = ">> ERR: " + clues[clues.length - 1];
+          }
+
+          failures++;
+
+          setTimeout(() => {
+            btnSubmit.style.background = "transparent";
+            btnSubmit.style.color = "#a4b5c4";
+            btnSubmit.innerText = "RATIFY BORDER";
+          }, 1500);
+        }
+      });
+
+      drawGrid();
+      drawCrosshair();
+    </script>
+  </body>
+</html>
