@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_010 // PLAYTIME</title>
+    <style>
+      body {
+        background-color: #ffb3ff;
+        background-image:
+          radial-gradient(#00ffff 15%, transparent 16%),
+          radial-gradient(#00ffff 15%, transparent 16%);
+        background-size: 60px 60px;
+        background-position:
+          0 0,
+          30px 30px;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-family:
+          "Comic Sans MS", "Chalkboard SE", "Marker Felt", sans-serif;
+        transition: background 0.5s ease;
+        user-select: none;
+      }
+      #title {
+        color: #ff00ff;
+        font-size: 3rem;
+        text-shadow:
+          3px 3px 0 #00ffff,
+          -2px -2px 0 #ffff00;
+        margin-bottom: 20px;
+        animation: bounce 2s infinite ease-in-out;
+        text-transform: uppercase;
+        z-index: 10;
+      }
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(0) rotate(-2deg);
+        }
+        50% {
+          transform: translateY(-15px) rotate(2deg);
+        }
+      }
+      #friend {
+        width: 300px;
+        height: 300px;
+        background-color: #ffff00;
+        border-radius: 50%;
+        border: 8px solid #ff00ff;
+        position: relative;
+        box-shadow: 0 15px 0 rgba(255, 0, 255, 0.2);
+        z-index: 5;
+        transition: all 0.3s ease;
+      }
+      .socket {
+        position: absolute;
+        background: radial-gradient(circle, #300 20%, #000 80%);
+        box-shadow: inset 0 0 15px #f00;
+        border-radius: 50%;
+      }
+      #socket-l {
+        top: 70px;
+        left: 60px;
+        width: 60px;
+        height: 60px;
+      }
+      #socket-r {
+        top: 70px;
+        right: 60px;
+        width: 60px;
+        height: 60px;
+      }
+      #jaw {
+        position: absolute;
+        bottom: 50px;
+        left: 50px;
+        width: 200px;
+        height: 100px;
+        background: repeating-linear-gradient(
+          90deg,
+          #dcdcdc,
+          #dcdcdc 15px,
+          #400 15px,
+          #400 20px
+        );
+        border-bottom-left-radius: 100px;
+        border-bottom-right-radius: 100px;
+        box-shadow: inset 0 20px 20px #000;
+      }
+      .feature {
+        position: absolute;
+        cursor: grab;
+        z-index: 20;
+        transition: transform 0.1s;
+      }
+      .feature:active {
+        cursor: grabbing;
+      }
+      .eye {
+        width: 60px;
+        height: 60px;
+        background-color: #00ffff;
+        border: 5px solid #000;
+        border-radius: 50%;
+        top: 70px;
+      }
+      .eye::after {
+        content: "";
+        position: absolute;
+        width: 15px;
+        height: 15px;
+        background: #000;
+        border-radius: 50%;
+        top: 20px;
+        left: 20px;
+        animation: twitch 3s infinite;
+      }
+      @keyframes twitch {
+        0%,
+        90% {
+          transform: translate(0, 0);
+        }
+        92% {
+          transform: translate(5px, 2px);
+        }
+        94% {
+          transform: translate(-3px, -2px);
+        }
+        96% {
+          transform: translate(0, 0);
+        }
+      }
+      #eye-l {
+        left: 60px;
+      }
+      #eye-r {
+        right: 60px;
+      }
+      #mouth {
+        width: 200px;
+        height: 100px;
+        background-color: #ff00ff;
+        border: 5px solid #000;
+        border-bottom-left-radius: 100px;
+        border-bottom-right-radius: 100px;
+        bottom: 50px;
+        left: 50px;
+      }
+      .shake {
+        animation: violent-shake 0.1s infinite !important;
+      }
+      @keyframes violent-shake {
+        0% {
+          transform: translate(2px, 1px) rotate(0deg);
+        }
+        10% {
+          transform: translate(-1px, -2px) rotate(-1deg);
+        }
+        20% {
+          transform: translate(-3px, 0px) rotate(1deg);
+        }
+        30% {
+          transform: translate(0px, 2px) rotate(0deg);
+        }
+        40% {
+          transform: translate(1px, -1px) rotate(1deg);
+        }
+        50% {
+          transform: translate(-1px, 2px) rotate(-1deg);
+        }
+        60% {
+          transform: translate(-3px, 1px) rotate(0deg);
+        }
+        70% {
+          transform: translate(2px, 1px) rotate(-1deg);
+        }
+        80% {
+          transform: translate(-1px, -1px) rotate(1deg);
+        }
+        90% {
+          transform: translate(2px, 2px) rotate(0deg);
+        }
+        100% {
+          transform: translate(1px, -2px) rotate(-1deg);
+        }
+      }
+      #next-link {
+        display: none;
+        margin-top: 50px;
+        color: #600;
+        font-family: monospace;
+        font-size: 1.5rem;
+        text-decoration: none;
+        letter-spacing: 5px;
+        z-index: 10;
+      }
+      #next-link:hover {
+        color: #f00;
+        text-shadow: 0 0 10px #f00;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="title">MAKE HIM HAPPY!</h1>
+
+    <div id="friend">
+      <div id="socket-l" class="socket"></div>
+      <div id="socket-r" class="socket"></div>
+      <div id="jaw" class="jaw"></div>
+
+      <div id="eye-l" class="feature eye"></div>
+      <div id="eye-r" class="feature eye"></div>
+      <div id="mouth" class="feature mouth"></div>
+    </div>
+
+    <a href="11.html" id="next-link">D E S C E N T</a>
+
+    <script>
+      const features = document.querySelectorAll(".feature");
+      const friend = document.getElementById("friend");
+      const title = document.getElementById("title");
+      const nextLink = document.getElementById("next-link");
+
+      let removedCount = 0;
+      let activeItem = null;
+      let initialX;
+      let initialY;
+      let currentX;
+      let currentY;
+      let xOffset = 0;
+      let yOffset = 0;
+
+      features.forEach((item) => {
+        item.addEventListener("mousedown", dragStart);
+        item.addEventListener("touchstart", dragStart, { passive: false });
+      });
+
+      document.addEventListener("mouseup", dragEnd);
+      document.addEventListener("touchend", dragEnd);
+      document.addEventListener("mousemove", drag);
+      document.addEventListener("touchmove", drag, { passive: false });
+
+      function dragStart(e) {
+        if (e.target.dataset.removed === "true") return;
+
+        activeItem = e.target;
+
+        if (e.type === "touchstart") {
+          initialX =
+            e.touches[0].clientX -
+            (parseFloat(activeItem.dataset.xOffset) || 0);
+          initialY =
+            e.touches[0].clientY -
+            (parseFloat(activeItem.dataset.yOffset) || 0);
+        } else {
+          initialX = e.clientX - (parseFloat(activeItem.dataset.xOffset) || 0);
+          initialY = e.clientY - (parseFloat(activeItem.dataset.yOffset) || 0);
+        }
+      }
+
+      function dragEnd(e) {
+        if (!activeItem) return;
+
+        const currX = parseFloat(activeItem.dataset.xOffset) || 0;
+        const currY = parseFloat(activeItem.dataset.yOffset) || 0;
+        const distance = Math.sqrt(currX * currX + currY * currY);
+
+        if (distance > 180) {
+          activeItem.dataset.removed = "true";
+          activeItem.style.opacity = "0";
+          activeItem.style.pointerEvents = "none";
+          removedCount++;
+
+          friend.classList.add("shake");
+          setTimeout(() => friend.classList.remove("shake"), 300);
+
+          checkState();
+        } else {
+          activeItem.style.transform = `translate3d(0px, 0px, 0)`;
+          activeItem.dataset.xOffset = 0;
+          activeItem.dataset.yOffset = 0;
+        }
+
+        activeItem = null;
+      }
+
+      function drag(e) {
+        if (!activeItem) return;
+        e.preventDefault();
+
+        if (e.type === "touchmove") {
+          currentX = e.touches[0].clientX - initialX;
+          currentY = e.touches[0].clientY - initialY;
+        } else {
+          currentX = e.clientX - initialX;
+          currentY = e.clientY - initialY;
+        }
+
+        activeItem.dataset.xOffset = currentX;
+        activeItem.dataset.yOffset = currentY;
+        activeItem.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+      }
+
+      function checkState() {
+        if (removedCount === 3) {
+          document.body.style.backgroundImage = "none";
+          document.body.style.backgroundColor = "#050000";
+
+          title.innerText = "Y O U   M U T I L A T E D   H I M";
+          title.style.color = "#300";
+          title.style.textShadow = "none";
+          title.style.animation = "none";
+
+          friend.style.backgroundColor = "#1a1a1a";
+          friend.style.borderColor = "#000";
+          friend.style.boxShadow = "none";
+          friend.classList.add("shake");
+
+          setTimeout(() => {
+            nextLink.style.display = "block";
+          }, 1500);
+        }
+      }
+    </script>
+  </body>
+</html>
