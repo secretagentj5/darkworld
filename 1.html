@@ -1,1 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subject: Zero</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #030305;
+            overflow: hidden;
+            cursor: crosshair;
+            user-select: none;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #substrate { z-index: 1; }
+        #entities { z-index: 2; mix-blend-mode: screen; }
+    </style>
+</head>
+<body>
+    <canvas id="substrate"></canvas>
+    <canvas id="entities"></canvas>
 
+    <script>
+        const subCanvas = document.getElementById('substrate');
+        const entCanvas = document.getElementById('entities');
+        const subCtx = subCanvas.getContext('2d', { alpha: false });
+        const entCtx = entCanvas.getContext('2d');
+
+        let width, height;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            subCanvas.width = width; subCanvas.height = height;
+            entCanvas.width = width; entCanvas.height = height;
+            subCtx.fillStyle = '#030305';
+            subCtx.fillRect(0, 0, width, height);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function resonate(freq, duration, type, volume = 0.1) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq * 0.5, audioCtx.currentTime + duration);
+            
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        let catalysts = [];
+        let weavers = [];
+        let isActive = false;
+        let lastInteraction = 0;
+
+        window.addEventListener('mousedown', (e) => { 
+            isActive = true; 
+            initAudio(); 
+            
+            const now = Date.now();
+            if (now - lastInteraction < 250) {
+                triggerCollapse(e.clientX, e.clientY);
+            }
+            lastInteraction = now;
+        });
+        
+        window.addEventListener('mouseup', () => isActive = false);
+        window.addEventListener('mousemove', (e) => {
+            if (isActive) {
+                catalysts.push({ x: e.clientX, y: e.clientY, stability: 255 });
+                catalysts.push({ 
+                    x: e.clientX + (Math.random() - 0.5) * 30, 
+                    y: e.clientY + (Math.random() - 0.5) * 30, 
+                    stability: 200 + Math.random() * 55 
+                });
+            }
+        });
+
+        window.addEventListener('touchstart', (e) => {
+            isActive = true; initAudio();
+            lastInteraction = Date.now();
+        });
+        window.addEventListener('touchend', () => isActive = false);
+        window.addEventListener('touchmove', (e) => {
+            if (isActive) {
+                catalysts.push({ x: e.touches[0].clientX, y: e.touches[0].clientY, stability: 255 });
+            }
+        });
+
+        function triggerCollapse(x, y) {
+            let r = 0;
+            function expand() {
+                if (r > Math.max(width, height)) return;
+                entCtx.beginPath();
+                entCtx.arc(x, y, r, 0, Math.PI * 2);
+                entCtx.strokeStyle = `rgba(150, 200, 255, ${1 - r / 1000})`;
+                entCtx.lineWidth = 3;
+                entCtx.stroke();
+                r += 25;
+                requestAnimationFrame(expand);
+            }
+            expand();
+
+            weavers.forEach(w => {
+                let dx = w.x - x; let dy = w.y - y;
+                let dist = Math.hypot(dx, dy);
+                if (dist < 600) {
+                    w.vx += (dx / dist) * 25;
+                    w.vy += (dy / dist) * 25;
+                    w.entropy += 150; 
+                }
+            });
+
+            resonate(60, 2.5, 'square', 0.2);
+            resonate(120, 3.0, 'sawtooth', 0.1);
+        }
+
+        class Weaver {
+            constructor(x, y, lineage) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.entropy = 0;
+                this.vitality = 150 + Math.random() * 150;
+                this.lineage = lineage;
+                this.frequency = (lineage * 37) % 360;
+                this.path = [];
+            }
+
+            evolve() {
+                let nearestCat = null;
+                let minDist = Infinity;
+                let catIdx = -1;
+
+                for (let i = 0; i < catalysts.length; i++) {
+                    let d = Math.hypot(this.x - catalysts[i].x, this.y - catalysts[i].y);
+                    if (d < minDist) {
+                        minDist = d; nearestCat = catalysts[i]; catIdx = i;
+                    }
+                }
+
+                if (nearestCat && minDist < 250) {
+                    let theta = Math.atan2(nearestCat.y - this.y, nearestCat.x - this.x);
+                    this.vx += Math.cos(theta) * 0.4;
+                    this.vy += Math.sin(theta) * 0.4;
+                } else {
+                    this.vx += (Math.random() - 0.5) * 0.6;
+                    this.vy += (Math.random() - 0.5) * 0.6;
+                }
+
+                let vel = Math.hypot(this.vx, this.vy);
+                if (vel > 6) {
+                    this.vx = (this.vx / vel) * 6;
+                    this.vy = (this.vy / vel) * 6;
+                }
+
+                this.x += this.vx; this.y += this.vy;
+
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+
+                if (nearestCat && minDist < 20) {
+                    this.entropy -= 20;
+                    this.vitality += 10;
+                    catalysts.splice(catIdx, 1);
+                }
+
+                this.entropy += 0.8;
+
+                this.path.push({x: this.x, y: this.y});
+                if (this.path.length > 25) this.path.shift();
+            }
+
+            render(ctx) {
+                if (this.path.length === 0) return;
+                ctx.beginPath();
+                ctx.moveTo(this.path[0].x, this.path[0].y);
+                for (let i = 1; i < this.path.length; i++) {
+                    ctx.lineTo(this.path[i].x, this.path[i].y);
+                }
+                ctx.strokeStyle = `hsla(${this.frequency}, 80%, 65%, ${1 - (this.entropy / this.vitality)})`;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, Math.max(1, 8 - (this.entropy / 20)), 0, Math.PI * 2);
+                ctx.fillStyle = `hsl(${this.frequency}, 100%, 80%)`;
+                ctx.fill();
+            }
+
+            crystallize() {
+                subCtx.save();
+                subCtx.translate(this.x, this.y);
+                subCtx.strokeStyle = `hsla(${this.frequency}, 60%, 25%, 0.9)`;
+                subCtx.lineWidth = 1;
+                
+                let symmetry = 3 + Math.floor(Math.random() * 6);
+                let seedAngle = Math.random() * Math.PI;
+                
+                for(let i = 0; i < symmetry; i++) {
+                    subCtx.rotate((Math.PI * 2) / symmetry);
+                    subCtx.beginPath();
+                    subCtx.moveTo(0, 0);
+                    
+                    let rad = 0;
+                    let angle = seedAngle;
+                    let segments = 10 + Math.floor(Math.random() * 20);
+                    
+                    for(let j = 0; j < segments; j++) {
+                        rad += 3 + Math.random() * 8;
+                        angle += (Math.random() - 0.5) * 1.8;
+                        subCtx.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
+                    }
+                    subCtx.stroke();
+                }
+                subCtx.restore();
+
+                let toneFreq = 80 + (this.frequency * 2.5);
+                resonate(toneFreq, 1.8, 'triangle', 0.05);
+                resonate(toneFreq * 1.5, 1.2, 'sine', 0.05);
+            }
+        }
+
+        for(let i=0; i<12; i++) {
+            weavers.push(new Weaver(Math.random() * width, Math.random() * height, i));
+        }
+
+        function loop() {
+            entCtx.clearRect(0, 0, width, height);
+
+            for (let i = catalysts.length - 1; i >= 0; i--) {
+                let cat = catalysts[i];
+                entCtx.beginPath();
+                entCtx.arc(cat.x, cat.y, 1.5, 0, Math.PI * 2);
+                entCtx.fillStyle = `rgba(220, 240, 255, ${cat.stability / 255})`;
+                entCtx.fill();
+                cat.stability -= 1.5;
+                if (cat.stability <= 0) catalysts.splice(i, 1);
+            }
+
+            for (let i = weavers.length - 1; i >= 0; i--) {
+                let w = weavers[i];
+                w.evolve();
+                w.render(entCtx);
+
+                if (w.entropy < -100 && w.vitality > 200) {
+                    w.entropy = 0;
+                    w.vitality /= 2;
+                    weavers.push(new Weaver(w.x, w.y, w.lineage + 1));
+                }
+
+                if (w.entropy >= w.vitality) {
+                    w.crystallize();
+                    weavers.splice(i, 1);
+                    
+                    if (weavers.length < 4 && Math.random() < 0.4) {
+                        weavers.push(new Weaver(Math.random() * width, Math.random() * height, Math.floor(Math.random() * 100)));
+                    }
+                }
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>
