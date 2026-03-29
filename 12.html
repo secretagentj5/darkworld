@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_012 // THE_SCAN</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+      body {
+        background-color: #020202;
+        color: #8da399;
+        font-family: "Share Tech Mono", monospace;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+      }
+      .scanlines {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(
+          rgba(0, 0, 0, 0) 50%,
+          rgba(0, 0, 0, 0.4) 50%
+        );
+        background-size: 100% 4px;
+        z-index: 100;
+        pointer-events: none;
+      }
+      .flicker {
+        animation: crt-flicker 0.15s infinite;
+      }
+      @keyframes crt-flicker {
+        0% {
+          opacity: 0.95;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.9;
+        }
+      }
+      .container {
+        display: flex;
+        width: 900px;
+        height: 500px;
+        border: 1px solid #1a2b22;
+        background: #050806;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        position: relative;
+        z-index: 10;
+      }
+      .log-panel {
+        flex: 1;
+        padding: 30px;
+        border-right: 1px solid #1a2b22;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        font-size: 1.2rem;
+        color: #4f735f;
+        border-bottom: 1px solid #1a2b22;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+      p {
+        line-height: 1.6;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+      }
+      .highlight {
+        color: #a32929;
+      }
+      .input-zone {
+        margin-top: auto;
+      }
+      input[type="text"] {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid #4f735f;
+        color: #fff;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 1.2rem;
+        width: 100%;
+        padding: 5px;
+        outline: none;
+        letter-spacing: 2px;
+        text-transform: lowercase;
+      }
+      #feedback {
+        margin-top: 10px;
+        color: #a32929;
+        height: 20px;
+        font-size: 0.9rem;
+      }
+      .scan-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px;
+        position: relative;
+      }
+      canvas {
+        background: #000;
+        border: 1px solid #1a2b22;
+        width: 350px;
+        height: 350px;
+        box-shadow: inset 0 0 40px #000;
+      }
+      .slider-container {
+        width: 350px;
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 80%;
+        background: transparent;
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 2px;
+        background: #1a2b22;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 15px;
+        width: 5px;
+        background: #8da399;
+        margin-top: -6px;
+        cursor: ew-resize;
+      }
+      .depth-label {
+        font-size: 0.9rem;
+        color: #4f735f;
+      }
+    </style>
+  </head>
+  <body class="flicker">
+    <div class="scanlines"></div>
+
+    <div class="container">
+      <div class="log-panel">
+        <div class="header">MILITARY_HOSP_WARD_7 // 1918</div>
+        <p>
+          Patient 814 survived the trenches, but he brought something back in
+          his skull.
+        </p>
+        <p>
+          He stopped sleeping. He said the static wasn't just in the radios
+          anymore; it was in the meat. He tried to dig it out with his own tags.
+        </p>
+        <p>
+          We strapped him down and ran an experimental volumetric x-ray. The
+          machine didn't capture a human brain. It captured the architecture of
+          the signal itself, nesting inside his frontal lobe like a parasite.
+        </p>
+        <p>
+          He kept repeating a sequence of
+          <span class="highlight">eight words</span>. Over and over. A diagnosis
+          he gave himself.
+        </p>
+        <p>
+          Scroll through the slices. Pierce the anomaly. Extract the final
+          condition.
+        </p>
+
+        <div class="input-zone">
+          <input
+            type="text"
+            id="ans"
+            maxlength="8"
+            autocomplete="off"
+            spellcheck="false"
+            autofocus
+          />
+          <div id="feedback"></div>
+        </div>
+      </div>
+
+      <div class="scan-panel">
+        <canvas id="scan-canvas" width="350" height="350"></canvas>
+        <div class="slider-container">
+          <span class="depth-label">Z-AXIS</span>
+          <input
+            type="range"
+            id="depth-slider"
+            min="-130"
+            max="130"
+            value="-130"
+          />
+          <span class="depth-label" id="depth-val">-130</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const canvas = document.getElementById("scan-canvas");
+      const ctx = canvas.getContext("2d");
+      const slider = document.getElementById("depth-slider");
+      const depthVal = document.getElementById("depth-val");
+      const input = document.getElementById("ans");
+      const feedback = document.getElementById("feedback");
+
+      const points = [];
+      const W = 350;
+      const H = 350;
+      const CX = W / 2;
+      const CY = H / 2;
+
+      for (let i = 0; i < 40000; i++) {
+        let x = (Math.random() * 2 - 1) * 120;
+        let y = (Math.random() * 2 - 1) * 140;
+        let z = (Math.random() * 2 - 1) * 130;
+
+        if (
+          (x * x) / (120 * 120) +
+            (y * y) / (140 * 140) +
+            (z * z) / (130 * 130) <
+          1
+        ) {
+          let isAnomaly =
+            (x - 20) ** 2 + (y + 30) ** 2 + (z - 10) ** 2 < 45 ** 2;
+          points.push({
+            x: x,
+            y: y,
+            z: z,
+            type: isAnomaly ? 1 : 0,
+            noiseX: Math.random() * 4 - 2,
+            noiseY: Math.random() * 4 - 2,
+          });
+        }
+      }
+
+      const words = [
+        { z: -100, text: "NIL" },
+        { z: -70, text: "ECHO" },
+        { z: -40, text: "COLD" },
+        { z: -10, text: "ROT" },
+        { z: 20, text: "OZONE" },
+        { z: 50, text: "SKIN" },
+        { z: 80, text: "IRON" },
+        { z: 110, text: "SILENCE" },
+      ];
+
+      function drawSlice(zLevel) {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, W, H);
+
+        let time = Date.now() * 0.001;
+
+        ctx.fillStyle = "rgba(79, 115, 95, 0.4)";
+        for (let p of points) {
+          if (Math.abs(p.z - zLevel) < 3) {
+            if (p.type === 1) {
+              ctx.fillStyle = "rgba(163, 41, 41, 0.6)";
+            } else {
+              ctx.fillStyle = "rgba(79, 115, 95, 0.4)";
+            }
+            let nx = p.x + Math.sin(time + p.y * 0.1) * p.noiseX;
+            let ny = p.y + Math.cos(time + p.x * 0.1) * p.noiseY;
+            ctx.fillRect(CX + nx, CY + ny, 2, 2);
+          }
+        }
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = '24px "Share Tech Mono"';
+        ctx.filter = "blur(1px)";
+
+        for (let w of words) {
+          if (Math.abs(w.z - zLevel) <= 2) {
+            ctx.fillStyle = "rgba(120, 10, 10, 0.7)";
+            ctx.fillText(w.text, CX + 20, CY - 30);
+          }
+        }
+        ctx.filter = "none";
+      }
+
+      function loop() {
+        drawSlice(parseInt(slider.value));
+        requestAnimationFrame(loop);
+      }
+      loop();
+
+      slider.addEventListener("input", (e) => {
+        depthVal.innerText = e.target.value;
+      });
+
+      const _h = [2, 195, 181, 30, 9, 37, 223, 37];
+      function _v(s) {
+        if (s.length !== 8) return false;
+        for (let i = 0; i < 8; i++) {
+          if ((s.charCodeAt(i) * 7) % 256 !== _h[i]) return false;
+        }
+        return true;
+      }
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          const val = this.value.trim().toLowerCase();
+          if (_v(val)) {
+            input.disabled = true;
+            feedback.style.color = "#8da399";
+            feedback.innerText =
+              "TISSUE DEATH CONFIRMED. PREPARING EXTRACTION.";
+
+            let fade = 0;
+            let fadeInt = setInterval(() => {
+              fade += 0.02;
+              document.body.style.opacity = 1 - fade;
+              if (fade >= 1) {
+                clearInterval(fadeInt);
+                window.location.href = "13.html";
+              }
+            }, 50);
+          } else {
+            this.value = "";
+            feedback.innerText = "INCORRECT DIAGNOSIS. THE PARASITE SPREADS.";
+            setTimeout(() => (feedback.innerText = ""), 2000);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
