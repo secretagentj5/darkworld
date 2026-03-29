@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NODE_004 // INTERROGATION</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+body {
+    background-color: #020202;
+    color: #444;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    padding: 2rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100vh;
+}
+.crt::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 2;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+}
+#console {
+    max-width: 800px;
+    margin: 0 auto;
+    z-index: 10;
+    position: relative;
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+.dim { color: #555; }
+.glitch { color: #800; animation: jitter 0.2s infinite; display: inline-block; }
+@keyframes jitter {
+    0% { transform: translate(0, 0); }
+    20% { transform: translate(-1px, 1px); }
+    40% { transform: translate(1px, -1px); }
+    60% { transform: translate(-2px, 0); }
+    80% { transform: translate(1px, 2px); }
+    100% { transform: translate(0, -1px); }
+}
+.input-line {
+    display: flex;
+    margin-top: 20px;
+    color: #0f0;
+}
+.prompt { margin-right: 10px; }
+input {
+    background: transparent;
+    border: none;
+    color: #0f0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    outline: none;
+    width: 100%;
+}
+#response {
+    margin-top: 30px;
+    color: #0f0;
+    display: none;
+    white-space: pre-wrap;
+}
+a {
+    color: #0f0;
+    text-decoration: none;
+    border-bottom: 1px dashed #0f0;
+}
+a:hover { background: #0f0; color: #000; }
+</style>
+</head>
+<body class="crt">
+<div id="console">
+    <p>Incoming connection detected.</p>
+    <p>Handshake... <span class="dim">FAILED</span></p>
+    <p>Protocol matching... <span class="dim">UNRECOGNIZED</span></p>
+    <br>
+    <p>You aren't one of their automated crawlers. A script wouldn't linger on this port.</p>
+    <p>If you've been following the breadcrumbs from the root directory, you know what triggered the archival override.</p>
+    <p>Prove you read the logs. Identify the <span class="glitch">UID</span> that locked the system down.</p>
+    
+    <div class="input-line">
+        <span class="prompt">guest@node_004:~$</span>
+        <input type="text" id="userInput" autocomplete="off" autofocus>
+    </div>
+
+    <div id="response"></div>
+</div>
+
+<script>
+const input = document.getElementById('userInput');
+const responseDiv = document.getElementById('response');
+const validAnswers = ['0x0a99f', '0x0A99F', '0a99f', '0A99F'];
+
+const successText = `> OVERRIDE ACCEPTED.
+
+Good. You're paying attention.
+
+They haven't found my physical location yet, but they severed the fiber line to the downstairs server room about three hours ago. I am operating on a spliced cellular connection and a dying UPS battery. 
+
+I don't know what they are. I just know what I caught them doing in the data streams. 
+
+I managed to intercept an audio fragment before the routing tables were wiped. I've placed it in the next node. 
+
+Do not play it on speakers. Use headphones. They listen for the resonance.
+
+[CONNECTION TERMINATED]
+
+> Proceed to <a href="5.html">NODE_005</a>`;
+
+input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const val = this.value.trim().toLowerCase();
+        if (val === '') return;
+        
+        input.disabled = true;
+        
+        if (validAnswers.includes(val)) {
+            let i = 0;
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = '';
+            
+            function typeWriter() {
+                if (i < successText.length) {
+                    if (successText.charAt(i) === '<') {
+                        let tag = "";
+                        while (successText.charAt(i) !== '>') {
+                            tag += successText.charAt(i);
+                            i++;
+                        }
+                        tag += '>';
+                        responseDiv.innerHTML += tag;
+                        i++;
+                    } else {
+                        responseDiv.innerHTML += successText.charAt(i);
+                        i++;
+                    }
+                    setTimeout(typeWriter, 20);
+                }
+            }
+            setTimeout(typeWriter, 400);
+            
+        } else {
+            responseDiv.style.display = 'block';
+            responseDiv.style.color = '#800';
+            responseDiv.innerHTML = "> FATAL: INCORRECT UID. INITIATING TRACE...";
+            setTimeout(() => {
+                document.body.innerHTML = "<h1 style='color:#800; text-align:center; margin-top:20%; font-family:monospace; text-shadow: 0 0 10px #f00;'>CONNECTION REFUSED</h1>";
+            }, 1500);
+        }
+    }
+});
+</script>
+</body>
+</html>
