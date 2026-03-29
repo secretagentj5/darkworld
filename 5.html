@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NODE_005 // SIGNAL_ISOLATION</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+body {
+    background-color: #050505;
+    color: #0f0;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+.crt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+    z-index: 100;
+}
+.scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0.4;
+}
+#interface {
+    z-index: 10;
+    width: 90%;
+    max-width: 800px;
+    border: 1px solid #0f0;
+    padding: 20px;
+    background: rgba(0, 20, 0, 0.8);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+}
+.header {
+    border-bottom: 1px solid #0f0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+.warning {
+    color: #ff3333;
+    animation: blink 2s infinite;
+}
+@keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+canvas {
+    width: 100%;
+    height: 300px;
+    background: #000;
+    border: 1px solid #0f0;
+    margin-bottom: 20px;
+}
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+}
+.control-group {
+    display: flex;
+    flex-direction: column;
+}
+label {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: transparent;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 8px;
+    background: #0f0;
+    cursor: crosshair;
+    margin-top: -6px;
+}
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 2px;
+    cursor: crosshair;
+    background: #005500;
+}
+input[type=range]:focus {
+    outline: none;
+}
+.metrics {
+    font-size: 0.8rem;
+    margin-top: 5px;
+    color: #00aa00;
+}
+#status-output {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    text-align: center;
+    min-height: 1.5rem;
+}
+.locked-link {
+    display: none;
+    margin-top: 15px;
+    color: #fff;
+    background: #0f0;
+    padding: 10px;
+    text-decoration: none;
+    text-align: center;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+.locked-link:hover {
+    background: #fff;
+    color: #000;
+}
+</style>
+</head>
+<body>
+
+<div class="crt-overlay"></div>
+<div class="scanlines"></div>
+
+<div id="interface">
+    <div class="header">
+        <span>SYS_ANALYST // AUDIO_FRAG_EXTRACTOR</span>
+        <span class="warning">AUDIO MUTED TO PREVENT RESONANCE TRACKING</span>
+    </div>
+    
+    <p style="font-size: 0.9rem; margin-bottom: 20px; line-height: 1.4;">
+        > The fragment is buried under heavy algorithmic static. <br>
+        > I've routed the telemetry to a visual oscilloscope. <br>
+        > You must isolate the carrier wave. Adjust the parameters until the destructive interference hits absolute zero. Achieve Phase Lock.
+    </p>
+
+    <canvas id="scope"></canvas>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>LAMBDA (WAVELENGTH)</label>
+            <input type="range" id="freq" min="10" max="90" value="23">
+            <div class="metrics" id="freq-val">0x17</div>
+        </div>
+        <div class="control-group">
+            <label>MU (AMPLITUDE)</label>
+            <input type="range" id="amp" min="10" max="90" value="88">
+            <div class="metrics" id="amp-val">0x58</div>
+        </div>
+        <div class="control-group">
+            <label>PHI (PHASE SHIFT)</label>
+            <input type="range" id="phase" min="10" max="90" value="41">
+            <div class="metrics" id="phase-val">0x29</div>
+        </div>
+    </div>
+
+    <div id="status-output">INTERFERENCE LEVEL: <span id="noise-level">MAX</span></div>
+    <a href="6.html" id="next-node" class="locked-link">CARRIER WAVE ISOLATED // PROCEED TO NODE_006</a>
+</div>
+
+<script>
+const canvas = document.getElementById('scope');
+const ctx = canvas.getContext('2d');
+const freqSlider = document.getElementById('freq');
+const ampSlider = document.getElementById('amp');
+const phaseSlider = document.getElementById('phase');
+const freqVal = document.getElementById('freq-val');
+const ampVal = document.getElementById('amp-val');
+const phaseVal = document.getElementById('phase-val');
+const noiseOutput = document.getElementById('noise-level');
+const nextNodeLink = document.getElementById('next-node');
+
+let width, height;
+
+function resize() {
+    width = canvas.width = canvas.offsetWidth;
+    height = canvas.height = canvas.offsetHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const TARGET_F = 67;
+const TARGET_A = 34;
+const TARGET_P = 81;
+
+let isLocked = false;
+
+function toHex(val) {
+    return '0x' + parseInt(val).toString(16).toUpperCase().padStart(2, '0');
+}
+
+function draw() {
+    if (isLocked) return;
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = '#003300';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
+    }
+    for (let i = 0; i < height; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
+    ctx.strokeStyle = '#005500';
+    ctx.stroke();
+
+    const f = parseInt(freqSlider.value);
+    const a = parseInt(ampSlider.value);
+    const p = parseInt(phaseSlider.value);
+
+    freqVal.innerText = toHex(f);
+    ampVal.innerText = toHex(a);
+    phaseVal.innerText = toHex(p);
+
+    const distF = Math.abs(f - TARGET_F);
+    const distA = Math.abs(a - TARGET_A);
+    const distP = Math.abs(p - TARGET_P);
+    const totalDist = distF + distA + distP;
+
+    noiseOutput.innerText = totalDist > 0 ? totalDist.toString() + ' Δ' : 'ZERO';
+
+    if (totalDist === 0) {
+        triggerLock();
+        return;
+    }
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#0f0';
+    ctx.lineWidth = 2;
+
+    const actualFreq = f / 2000;
+    const actualAmp = a;
+    const actualPhase = p / 10;
+    const noiseLevel = totalDist;
+
+    for (let x = 0; x < width; x++) {
+        const noise = (Math.random() - 0.5) * noiseLevel * 1.5;
+        const y = height / 2 + Math.sin((x * actualFreq) + actualPhase) * actualAmp + noise;
+        
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    requestAnimationFrame(draw);
+}
+
+function triggerLock() {
+    isLocked = true;
+    
+    ctx.fillStyle = '#0f0';
+    ctx.fillRect(0, 0, width, height);
+    
+    setTimeout(() => {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.beginPath();
+        ctx.strokeStyle = '#0f0';
+        ctx.lineWidth = 3;
+        for (let x = 0; x < width; x++) {
+            const y = height / 2 + Math.sin((x * (TARGET_F/2000)) + (TARGET_P/10)) * TARGET_A;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(width/2 - 150, height/2 - 30, 300, 60);
+        ctx.strokeStyle = '#0f0';
+        ctx.strokeRect(width/2 - 150, height/2 - 30, 300, 60);
+        ctx.fillStyle = '#0f0';
+        ctx.font = '20px "Share Tech Mono"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('PHASE LOCK ACHIEVED', width/2, height/2);
+
+        document.getElementById('status-output').innerText = 'STATUS: DECRYPTED';
+        document.getElementById('status-output').style.color = '#fff';
+        
+        freqSlider.disabled = true;
+        ampSlider.disabled = true;
+        phaseSlider.disabled = true;
+
+        nextNodeLink.style.display = 'block';
+
+    }, 150);
+}
+
+draw();
+</script>
+</body>
+</html>
