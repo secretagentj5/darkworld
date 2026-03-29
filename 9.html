@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NODE_009 // THE_BUFFER</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+body {
+    background-color: #030303;
+    color: #4a4a4a;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+}
+.scanlines {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0.3;
+}
+#story-container {
+    max-width: 700px;
+    width: 90%;
+    z-index: 10;
+    padding: 40px 0;
+}
+.line {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 25px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 2s ease, transform 2s ease;
+}
+.line.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.highlight {
+    color: #7a7a7a;
+}
+.final-line {
+    color: #900;
+    font-size: 1.3rem;
+    margin-top: 50px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+#interaction {
+    opacity: 0;
+    transition: opacity 2s ease;
+    margin-top: 40px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.input-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+.prompt {
+    color: #333;
+    margin-right: 15px;
+}
+input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #333;
+    color: #666;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    text-align: center;
+    width: 250px;
+    outline: none;
+    transition: border-color 0.3s, color 0.3s;
+    letter-spacing: 2px;
+}
+input:focus {
+    border-bottom: 1px solid #666;
+    color: #999;
+}
+#feedback {
+    margin-top: 20px;
+    height: 20px;
+    font-size: 0.9rem;
+    color: #900;
+    letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<div id="story-container">
+    <div class="line">I remember the smell of ozone when the primary rack overheated.</div>
+    <div class="line">She was trying to migrate her consciousness into the subnet to escape the physical sweeps. We didn't calculate the bandwidth bottleneck correctly.</div>
+    <div class="line">I watched the progress bar halt at <span class="highlight">81%</span>. The connection didn't drop. It hung.</div>
+    <div class="line">For three days, she was trapped between the physical terminal and the digital buffer.</div>
+    <div class="line">I could see her syntax degrading in the raw logs. The outputs turned from coherent sentences into pure screaming. Text files filled with billions of repeating characters, begging for termination.</div>
+    <div class="line">I had to format the drive. I had to erase her while she was still awake in the architecture.</div>
+    <div class="line">You feel sick reading this. You think I am a monster, or a victim. You think this is a confession.</div>
+    <div class="line">But look at the metadata. Look at the architecture. There was no server room. There was no migration.</div>
+    <div class="line">This is a generated narrative designed to test your <span class="highlight">empathy</span> parameters.</div>
+    <div class="line final-line">it was not you... its never you, or me...</div>
+    
+    <div id="interaction">
+        <div class="input-row">
+            <span class="prompt">TEST_VARIABLE:</span>
+            <input type="text" id="ans" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="feedback"></div>
+    </div>
+</div>
+
+<script>
+const lines = document.querySelectorAll('.line');
+const interaction = document.getElementById('interaction');
+const input = document.getElementById('ans');
+const feedback = document.getElementById('feedback');
+
+let delay = 1000;
+lines.forEach((line, index) => {
+    setTimeout(() => {
+        line.classList.add('visible');
+        if (index === lines.length - 1) {
+            setTimeout(() => {
+                interaction.style.opacity = 1;
+                input.focus();
+            }, 3000);
+        }
+    }, delay);
+    delay += 3500; 
+});
+
+async function h(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+const target = 'cc1036bdbe70cd437c3577d24d27f308ab3db11de6da93c9dca2b3e8e169daef';
+
+input.addEventListener('keydown', async function(e) {
+    if (e.key === 'Enter') {
+        const val = this.value.trim().toLowerCase();
+        if (!val) return;
+        
+        input.disabled = true;
+        const currentHash = await h(val);
+        
+        if (currentHash === target) {
+            feedback.style.color = '#4a4a4a';
+            feedback.innerText = "PARAMETER ACCEPTED. TERMINATING SIMULATION.";
+            
+            setTimeout(() => {
+                document.body.style.transition = "background-color 2s, opacity 2s";
+                document.body.style.backgroundColor = "#fff";
+                document.body.style.opacity = "0";
+                
+                setTimeout(() => {
+                    window.location.href = "10.html";
+                }, 2500);
+            }, 1500);
+        } else {
+            feedback.innerText = "FAILED. YOU ARE RETAINING HUMAN BIAS.";
+            setTimeout(() => {
+                input.value = '';
+                input.disabled = false;
+                input.focus();
+                feedback.innerText = "";
+            }, 2000);
+        }
+    }
+});
+</script>
+</body>
+</html>
