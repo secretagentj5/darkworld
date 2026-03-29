@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NODE_006 // REFLECTION</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+body {
+    background-color: #000;
+    color: #333;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: opacity 0.5s ease;
+}
+.crt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none;
+    z-index: 100;
+}
+#interface {
+    text-align: center;
+    z-index: 10;
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+}
+p {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    margin-bottom: 40px;
+    color: #444;
+}
+input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #222;
+    color: #555;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.5rem;
+    text-align: center;
+    width: 80%;
+    outline: none;
+    transition: all 0.3s;
+}
+input:focus {
+    border-bottom: 1px solid #555;
+    color: #888;
+}
+#feedback {
+    margin-top: 30px;
+    height: 20px;
+    font-size: 0.9rem;
+    color: #600;
+}
+</style>
+</head>
+<body>
+
+<div class="crt-overlay"></div>
+
+<div id="interface">
+    <p id="prompt">Confess.</p>
+    <input type="text" id="userInput" autocomplete="off" autofocus spellcheck="false">
+    <div id="feedback"></div>
+</div>
+
+<script>
+const v1 = "You bypass the interface because you crave control.";
+const v2 = "You read the raw source code because you think it makes you clever.";
+const v3 = "But there is no grand conspiracy here.";
+const v4 = "There are no agents listening to the frequencies.";
+const v5 = "There is only you, sitting in a dark room, staring at a glowing rectangle.";
+const v6 = "You are looking for a mystery to fill the void.";
+const v7 = "Admit it. Type the truth.";
+const k = "i am alone";
+
+const input = document.getElementById('userInput');
+const feedback = document.getElementById('feedback');
+let opacity = 1;
+
+input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const val = this.value.trim().toLowerCase();
+        
+        if (val === k) {
+            input.disabled = true;
+            feedback.style.color = "#444";
+            feedback.innerText = "Acceptance. Proceed.";
+            
+            setTimeout(() => {
+                document.body.style.opacity = 0;
+                setTimeout(() => {
+                    window.location.href = "7.html";
+                }, 2000);
+            }, 1500);
+            
+        } else {
+            this.value = '';
+            feedback.innerText = "Denial.";
+            opacity -= 0.15;
+            
+            if (opacity <= 0.1) {
+                input.disabled = true;
+                feedback.innerText = "You have faded away.";
+                document.body.style.opacity = 0;
+            } else {
+                document.body.style.opacity = opacity;
+            }
+        }
+    }
+});
+</script>
+</body>
+</html>
