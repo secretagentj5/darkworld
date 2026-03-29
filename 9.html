@@ -146,24 +146,23 @@ lines.forEach((line, index) => {
     delay += 3500; 
 });
 
-async function h(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+const _t = [517, 557, 572, 497, 592, 532, 617];
+function _v(s) {
+    if(s.length !== 7) return false;
+    for(let i = 0; i < 7; i++) {
+        if((s.charCodeAt(i) * 5) + 12 !== _t[i]) return false;
+    }
+    return true;
 }
 
-const target = 'cc1036bdbe70cd437c3577d24d27f308ab3db11de6da93c9dca2b3e8e169daef';
-
-input.addEventListener('keydown', async function(e) {
+input.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         const val = this.value.trim().toLowerCase();
         if (!val) return;
         
         input.disabled = true;
-        const currentHash = await h(val);
         
-        if (currentHash === target) {
+        if (_v(val)) {
             feedback.style.color = '#4a4a4a';
             feedback.innerText = "PARAMETER ACCEPTED. TERMINATING SIMULATION.";
             
