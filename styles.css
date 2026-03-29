@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+:root {
+    --bg-color: #050505;
+    --text-color: #0f0;
+    --dim-text: #005500;
+    --alert-color: #ff0033;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.crt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.4) 100%);
+    pointer-events: none;
+    z-index: 100;
+}
+
+.scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0.6;
+}
+
+main {
+    width: 90%;
+    max-width: 1000px;
+    margin-top: 10vh;
+    z-index: 10;
+    position: relative;
+}
+
+#narrative-container {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    min-height: 150px;
+    text-shadow: 0 0 5px var(--text-color);
+}
+
+.cursor {
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+.hidden {
+    display: none !important;
+}
+
+#system-status {
+    color: var(--dim-text);
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+#grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    padding-bottom: 50px;
+}
+
+.fragment-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    background-color: transparent;
+    border: 1px solid var(--dim-text);
+    color: var(--dim-text);
+    text-decoration: none;
+    font-size: 1.1rem;
+    position: relative;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.fragment-link::before {
+    content: '[LOCKED]';
+    position: absolute;
+    font-size: 0.8rem;
+    opacity: 0.5;
+}
+
+.fragment-link:hover {
+    border-color: var(--text-color);
+    color: var(--bg-color);
+    background-color: var(--text-color);
+    box-shadow: 0 0 15px var(--text-color);
+    cursor: crosshair;
+}
+
+.fragment-link:hover::before {
+    content: '';
+}
+
+.fragment-link .real-text {
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 2;
+}
+
+.fragment-link:hover .real-text {
+    opacity: 1;
+}
+
+.fragment-link:hover {
+    animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+}
+
+@keyframes glitch-skew {
+    0% { transform: skew(0deg); }
+    20% { transform: skew(-10deg); }
+    40% { transform: skew(10deg); }
+    60% { transform: skew(-5deg); }
+    80% { transform: skew(5deg); }
+    100% { transform: skew(0deg); }
+}
