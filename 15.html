@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_015 // SHINKAI</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Share+Tech+Mono&display=swap");
+      body {
+        background-color: #d1c5a5;
+        background-image: repeating-linear-gradient(
+          45deg,
+          rgba(139, 0, 0, 0.03) 0,
+          rgba(139, 0, 0, 0.03) 2px,
+          transparent 2px,
+          transparent 10px
+        );
+        color: #1a1a1a;
+        font-family: "Share Tech Mono", monospace;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        user-select: none;
+      }
+      .grain {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
+        opacity: 0.15;
+        pointer-events: none;
+        z-index: 100;
+      }
+      .vignette {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(
+          circle,
+          rgba(0, 0, 0, 0) 40%,
+          rgba(0, 0, 0, 0.8) 100%
+        );
+        pointer-events: none;
+        z-index: 99;
+      }
+      .container {
+        display: flex;
+        width: 900px;
+        height: 550px;
+        background: #e3d8b8;
+        border: 2px solid #8b0000;
+        box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.7);
+        z-index: 10;
+        position: relative;
+      }
+      .left-panel {
+        flex: 1.2;
+        padding: 40px;
+        border-right: 2px dashed #8b0000;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        font-size: 1.2rem;
+        color: #8b0000;
+        border-bottom: 2px solid #8b0000;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        letter-spacing: 2px;
+      }
+      .eng-text {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 20px;
+      }
+      .jp-text {
+        font-family: "Noto Serif JP", serif;
+        writing-mode: vertical-rl;
+        text-orientation: upright;
+        height: 100%;
+        font-size: 1.2rem;
+        line-height: 2;
+        color: #333;
+        padding-top: 10px;
+        border-left: 1px solid #a39575;
+        padding-left: 20px;
+        align-self: flex-end;
+      }
+      .right-panel {
+        flex: 1;
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #dbceaa;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+      }
+      .kanji-btn {
+        width: 50px;
+        height: 50px;
+        background: #e3d8b8;
+        border: 1px solid #a39575;
+        font-family: "Noto Serif JP", serif;
+        font-size: 1.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #1a1a1a;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+      }
+      .kanji-btn:hover {
+        background: #1a1a1a;
+        color: #e3d8b8;
+      }
+      .kanji-btn.active {
+        background: #8b0000;
+        color: #e3d8b8;
+        border-color: #8b0000;
+        box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.5);
+      }
+      .status-bar {
+        margin-top: 30px;
+        width: 100%;
+        height: 20px;
+        border: 1px solid #8b0000;
+        display: flex;
+        gap: 5px;
+        padding: 2px;
+      }
+      .status-pip {
+        flex: 1;
+        background: transparent;
+        transition: background 0.2s;
+      }
+      .status-pip.filled {
+        background: #8b0000;
+      }
+      .shake {
+        animation: shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+      }
+      @keyframes shake {
+        10%,
+        90% {
+          transform: translate3d(-2px, 0, 0);
+        }
+        20%,
+        80% {
+          transform: translate3d(4px, 0, 0);
+        }
+        30%,
+        50%,
+        70% {
+          transform: translate3d(-6px, 0, 0);
+        }
+        40%,
+        60% {
+          transform: translate3d(6px, 0, 0);
+        }
+      }
+      .blood-flash {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #8b0000;
+        z-index: 200;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.1s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain"></div>
+    <div class="vignette"></div>
+    <div class="blood-flash" id="flash"></div>
+
+    <div class="container" id="main-box">
+      <div class="left-panel">
+        <div class="header">IMPERIAL_NAVAL_INTEL // 1943</div>
+        <div class="eng-text">
+          The rot crossed the ocean. Our listening post on Marcus Island
+          intercepted a transmission formatted in the JN-25 naval cipher. It
+          wasn't a fleet movement. It was a prophecy.
+          <br /><br />
+          The codebreakers carved the decrypted sequence into the bunker walls
+          before taking their own lives.
+          <br /><br />
+          1. Where the sun is born.<br />
+          2. What swallows the earth.<br />
+          3. What flows from the fallen.<br />
+          4. What remains.
+        </div>
+        <div class="jp-text">
+          太陽が生まれる場所<br />
+          大地を飲み込むもの<br />
+          倒れし者から流れるもの<br />
+          残るもの
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="grid" id="k-grid"></div>
+        <div class="status-bar">
+          <div class="status-pip" id="pip-0"></div>
+          <div class="status-pip" id="pip-1"></div>
+          <div class="status-pip" id="pip-2"></div>
+          <div class="status-pip" id="pip-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const grid = document.getElementById("k-grid");
+      const mainBox = document.getElementById("main-box");
+      const flash = document.getElementById("flash");
+      const pips = [
+        document.getElementById("pip-0"),
+        document.getElementById("pip-1"),
+        document.getElementById("pip-2"),
+        document.getElementById("pip-3"),
+      ];
+
+      const k = [
+        "空",
+        "死",
+        "帝",
+        "国",
+        "艦",
+        "隊",
+        "東",
+        "闇",
+        "影",
+        "骨",
+        "海",
+        "鬼",
+        "神",
+        "霊",
+        "呪",
+        "毒",
+        "血",
+        "腐",
+        "泥",
+        "鉄",
+        "無",
+        "炎",
+        "灰",
+        "煙",
+        "霧",
+      ];
+      let seq = [];
+
+      k.forEach((char, idx) => {
+        const btn = document.createElement("div");
+        btn.className = "kanji-btn";
+        btn.innerText = char;
+        btn.dataset.id = idx;
+
+        btn.addEventListener("click", () => {
+          if (seq.length < 4 && !seq.includes(idx)) {
+            seq.push(idx);
+            btn.classList.add("active");
+            updatePips();
+
+            if (seq.length === 4) {
+              setTimeout(verify, 200);
+            }
+          }
+        });
+
+        grid.appendChild(btn);
+      });
+
+      function updatePips() {
+        pips.forEach((pip, i) => {
+          if (i < seq.length) pip.classList.add("filled");
+          else pip.classList.remove("filled");
+        });
+      }
+
+      function verify() {
+        let a = seq[0] * 7 - 12 === 30;
+        let b = seq[1] * 3 + 14 === 44;
+        let c = seq[2] * 5 - 19 === 61;
+        let d = seq[3] * 2 + 33 === 73;
+
+        if (a && b && c && d) {
+          flash.style.opacity = "1";
+          setTimeout(() => {
+            document.body.style.transition = "background-color 2s, opacity 2s";
+            document.body.style.backgroundColor = "#000";
+            document.body.style.opacity = "0";
+            setTimeout(() => {
+              window.location.href = "16.html";
+            }, 2000);
+          }, 150);
+        } else {
+          mainBox.classList.remove("shake");
+          void mainBox.offsetWidth;
+          mainBox.classList.add("shake");
+
+          flash.style.background = "#000";
+          flash.style.opacity = "0.5";
+          setTimeout(() => {
+            flash.style.opacity = "0";
+            flash.style.background = "#8b0000";
+          }, 100);
+
+          seq = [];
+          document
+            .querySelectorAll(".kanji-btn")
+            .forEach((btn) => btn.classList.remove("active"));
+          updatePips();
+        }
+      }
+    </script>
+  </body>
+</html>
