@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_014 // ПРАВДА</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Jura:wght@700&display=swap");
+      body {
+        background-color: #ebd9b4;
+        color: #1a1a1a;
+        font-family: "Jura", sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        overflow: hidden;
+        user-select: none;
+        cursor: crosshair;
+      }
+      .noise {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
+        opacity: 0.15;
+        pointer-events: none;
+        z-index: 100;
+      }
+      .grid {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-image:
+          linear-gradient(rgba(26, 26, 26, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(26, 26, 26, 0.1) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: 1;
+        pointer-events: none;
+      }
+      #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 40px;
+        box-sizing: border-box;
+      }
+      .header-box {
+        border-left: 8px solid #c8102e;
+        padding-left: 20px;
+        max-width: 500px;
+      }
+      h1 {
+        font-size: 3rem;
+        margin: 0 0 10px 0;
+        line-height: 1;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      .sub {
+        font-size: 1.2rem;
+        color: #c8102e;
+        margin-bottom: 20px;
+        letter-spacing: 1px;
+      }
+      .text {
+        font-size: 1rem;
+        line-height: 1.4;
+        margin-bottom: 10px;
+        background: #1a1a1a;
+        color: #ebd9b4;
+        padding: 5px 10px;
+        display: inline-block;
+      }
+      #status {
+        position: absolute;
+        bottom: 40px;
+        right: 40px;
+        font-size: 2rem;
+        color: #c8102e;
+        border: 4px solid #c8102e;
+        padding: 10px 20px;
+        display: none;
+        background: #ebd9b4;
+      }
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 5;
+      }
+      .shake {
+        animation: violent 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+      }
+      @keyframes violent {
+        10%,
+        90% {
+          transform: translate3d(-5px, 0, 0) rotate(-2deg);
+        }
+        20%,
+        80% {
+          transform: translate3d(10px, 0, 0) rotate(2deg);
+        }
+        30%,
+        50%,
+        70% {
+          transform: translate3d(-15px, 5px, 0) rotate(-3deg);
+        }
+        40%,
+        60% {
+          transform: translate3d(15px, -5px, 0) rotate(3deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="noise"></div>
+    <div class="grid"></div>
+
+    <div id="ui-layer">
+      <div class="header-box">
+        <h1>НОД_014<br />ПРАВДА</h1>
+        <div class="sub">ОТДЕЛ КОНТРОЛЯ ИДЕОЛОГИИ // 1932</div>
+        <div class="text">ЭЛЕМЕНТЫ ХАОТИЧНЫ.</div>
+        <br />
+        <div class="text">НАЙДИТЕ ТОЧКУ АБСОЛЮТНОЙ ЯСНОСТИ.</div>
+        <br />
+        <div class="text">ЛЮБОЙ СДВИГ — ЭТО ПРЕДАТЕЛЬСТВО.</div>
+      </div>
+      <div id="status">ПРЕДАТЕЛЬСТВО</div>
+    </div>
+
+    <canvas id="c"></canvas>
+
+    <script>
+      const canvas = document.getElementById("c");
+      const ctx = canvas.getContext("2d");
+      const statusDiv = document.getElementById("status");
+      let w, h;
+      let mx = 0,
+        my = 0;
+      let tx = 0,
+        ty = 0;
+      let locked = false;
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        tx = w * 0.81;
+        ty = h * 0.19;
+      }
+      window.addEventListener("resize", resize);
+      resize();
+
+      const pieces = [];
+
+      function addPoly(pts, color, z, rz) {
+        pieces.push({ type: "poly", pts, color, z, rz });
+      }
+      function addRing(r, thick, color, z, rz) {
+        pieces.push({ type: "ring", r, thick, color, z, rz });
+      }
+      function addLine(len, thick, ang, color, z, rz) {
+        pieces.push({ type: "line", len, thick, ang, color, z, rz });
+      }
+      function addText(str, size, color, z, rz) {
+        pieces.push({ type: "text", str, size, color, z, rz });
+      }
+
+      const R = 180;
+      const r = 68;
+      for (let i = 0; i < 10; i++) {
+        let a1 = ((i * 36 - 90) * Math.PI) / 180;
+        let a2 = (((i + 1) * 36 - 90) * Math.PI) / 180;
+        let rad1 = i % 2 === 0 ? R : r;
+        let rad2 = i % 2 === 0 ? r : R;
+
+        let pts = [
+          [0, 0],
+          [Math.cos(a1) * rad1, Math.sin(a1) * rad1],
+          [Math.cos(a2) * rad2, Math.sin(a2) * rad2],
+        ];
+        let col = i % 2 === 0 ? "#c8102e" : "#8b0000";
+        addPoly(
+          pts,
+          col,
+          Math.random() * 6 - 3,
+          Math.random() * 0.015 - 0.0075,
+        );
+      }
+
+      addRing(220, 20, "#1a1a1a", 2.5, 0.005);
+      addRing(245, 5, "#c8102e", -1.8, -0.003);
+
+      for (let i = 0; i < 6; i++) {
+        addLine(
+          800,
+          35,
+          (i * 30 * Math.PI) / 180,
+          "#1a1a1a",
+          Math.random() * 8 - 4,
+          Math.random() * 0.02 - 0.01,
+        );
+      }
+      for (let i = 0; i < 3; i++) {
+        addLine(
+          600,
+          15,
+          ((i * 45 + 15) * Math.PI) / 180,
+          "#c8102e",
+          Math.random() * 5 - 2.5,
+          Math.random() * 0.01 - 0.005,
+        );
+      }
+
+      addText("П Р А В Д А", 60, "#ebd9b4", 4, 0.01);
+
+      document.addEventListener("mousemove", (e) => {
+        if (!locked) {
+          mx = e.clientX;
+          my = e.clientY;
+        }
+      });
+
+      document.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!locked && e.touches.length > 0) {
+            mx = e.touches[0].clientX;
+            my = e.touches[0].clientY;
+          }
+        },
+        { passive: false },
+      );
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+
+        let dx = mx - tx;
+        let dy = my - ty;
+
+        if (locked) {
+          dx = 0;
+          dy = 0;
+        }
+
+        for (let p of pieces) {
+          ctx.save();
+
+          let cx = w / 2 + dx * p.z;
+          let cy = h / 2 + dy * p.z;
+          let angle = dx * p.rz + dy * p.rz;
+
+          ctx.translate(cx, cy);
+          ctx.rotate(angle);
+
+          if (locked && p.color === "#c8102e") ctx.fillStyle = "#1a1a1a";
+          else if (locked && p.color === "#8b0000") ctx.fillStyle = "#000000";
+          else ctx.fillStyle = p.color;
+
+          if (p.type === "poly") {
+            ctx.beginPath();
+            ctx.moveTo(p.pts[0][0], p.pts[0][1]);
+            for (let i = 1; i < p.pts.length; i++)
+              ctx.lineTo(p.pts[i][0], p.pts[i][1]);
+            ctx.closePath();
+            ctx.fill();
+          } else if (p.type === "ring") {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+            ctx.arc(0, 0, p.r - p.thick, 0, Math.PI * 2, true);
+            ctx.fill();
+          } else if (p.type === "line") {
+            ctx.rotate(p.ang);
+            ctx.fillRect(-p.len / 2, -p.thick / 2, p.len, p.thick);
+          } else if (p.type === "text") {
+            if (locked) ctx.fillStyle = "#c8102e";
+            ctx.font = `bold ${p.size}px Jura`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(p.str, 0, 0);
+          }
+
+          ctx.restore();
+        }
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+
+      document.addEventListener("click", () => {
+        if (locked) return;
+
+        const vx = (mx / w) * 100;
+        const vy = (my / h) * 100;
+
+        if (
+          Math.abs(vx * 7.4 - 599.4) < 1.5 &&
+          Math.abs(vy * 9.2 - 174.8) < 1.5
+        ) {
+          locked = true;
+          statusDiv.style.display = "block";
+          statusDiv.style.borderColor = "#1a1a1a";
+          statusDiv.style.color = "#1a1a1a";
+          statusDiv.style.backgroundColor = "transparent";
+          statusDiv.innerText = "ПРАВДА ПРИНЯТА";
+          document.body.style.transition = "background-color 2s";
+          document.body.style.backgroundColor = "#c8102e";
+
+          setTimeout(() => {
+            document.body.style.opacity = "0";
+            setTimeout(() => {
+              window.location.href = "15.html";
+            }, 1000);
+          }, 3000);
+        } else {
+          statusDiv.style.display = "block";
+          document.body.classList.remove("shake");
+          void document.body.offsetWidth;
+          document.body.classList.add("shake");
+
+          document.body.style.backgroundColor = "#500";
+          setTimeout(() => {
+            document.body.style.backgroundColor = "#ebd9b4";
+            statusDiv.style.display = "none";
+          }, 300);
+        }
+      });
+    </script>
+  </body>
+</html>
