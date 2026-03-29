@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_011 // TRENCH_ROT</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+      body {
+        background-color: #050505;
+        background-image: url("http://googleusercontent.com/image_collection/image_retrieval/12539900096769438010_0");
+        background-size: cover;
+        background-position: center;
+        background-blend-mode: overlay;
+        color: #ccc;
+        font-family: "Courier New", Courier, monospace;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow-x: hidden;
+        user-select: none;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)"/></svg>');
+        opacity: 0.06;
+        pointer-events: none;
+        z-index: 100;
+      }
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 50px;
+        justify-content: center;
+        align-items: flex-start;
+        width: 90%;
+        max-width: 1100px;
+        z-index: 10;
+        padding: 40px 0;
+      }
+      .left-col {
+        flex: 1;
+        min-width: 320px;
+        max-width: 500px;
+      }
+      .polaroid {
+        background: #e4d5b7;
+        padding: 10px 10px 35px 10px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.9);
+        transform: rotate(-2deg);
+        margin-bottom: 30px;
+        filter: sepia(0.4) contrast(1.2) brightness(0.8);
+      }
+      .polaroid img {
+        width: 100%;
+        display: block;
+        background: #111;
+        min-height: 250px;
+      }
+      .doc {
+        background: rgba(10, 10, 10, 0.85);
+        border: 1px solid #333;
+        padding: 30px;
+        box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.8);
+        line-height: 1.6;
+      }
+      .classified {
+        color: #a00;
+        font-weight: bold;
+        letter-spacing: 2px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        animation: glitch 4s infinite;
+      }
+      @keyframes glitch {
+        0%,
+        95%,
+        100% {
+          opacity: 1;
+          transform: translate(0);
+        }
+        96% {
+          opacity: 0.8;
+          transform: translate(-2px, 1px);
+        }
+        97% {
+          opacity: 0.4;
+          transform: translate(2px, -1px);
+        }
+        98% {
+          opacity: 0.9;
+          transform: translate(-1px, -2px);
+        }
+        99% {
+          opacity: 0.2;
+          transform: translate(1px, 2px);
+        }
+      }
+      p {
+        margin-bottom: 15px;
+        font-size: 0.95rem;
+      }
+      i {
+        color: #888;
+      }
+      .right-col {
+        background: #0f0f0f;
+        border: 6px solid #1a1a1a;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow:
+          inset 0 0 30px #000,
+          0 10px 40px #000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .board-title {
+        color: #555;
+        font-family: "Share Tech Mono", monospace;
+        letter-spacing: 3px;
+        margin-bottom: 20px;
+        font-size: 1.1rem;
+      }
+      canvas {
+        background: #151515;
+        border: 2px solid #222;
+        cursor: crosshair;
+        touch-action: none;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        transition: background-color 0.3s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="left-col">
+        <div class="polaroid">
+          <img
+            src="https://tse1.mm.bing.net/th/id/OIP.jcB7o_cGotiVt9CcoqRgjQHaFb?rs=1&pid=ImgDetMain&o=7&rm=3"
+            alt="ARCHIVAL"
+          />
+        </div>
+        <div class="doc">
+          <div class="classified">EXHIBIT_A // THE_ADLER_LOG // 1917</div>
+          <p>
+            The mist in the trenches wasn't gas. It was static. We found
+            Lieutenant Adler in the mud, his hands burned black to the bone,
+            clutching this radio log.
+          </p>
+          <p>
+            <i
+              >"I patched the switchboard. I plugged the first cord into Jack
+              2."</i
+            >
+          </p>
+          <p>
+            <i
+              >"The current screamed, arcing across Jack 3 and burning out Jack
+              4."</i
+            >
+          </p>
+          <p>
+            <i
+              >"I dropped the cord and jammed a grounded wire into Jack 9. The
+              interference pulled it violently straight down to Jack 13."</i
+            >
+          </p>
+          <p>
+            <i
+              >"The board caught fire, the flame tracing across 14 and 15,
+              finally melting Jack 16 into slag."</i
+            >
+          </p>
+          <p><i>"I am drawing the shape of the sound. God help us."</i></p>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="board-title">PATTERN RECORDER v1.4</div>
+        <canvas id="c"></canvas>
+      </div>
+    </div>
+
+    <script>
+      const canvas = document.getElementById("c");
+      const ctx = canvas.getContext("2d");
+      canvas.width = 300;
+      canvas.height = 300;
+
+      const dots = [];
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          dots.push({ x: 45 + j * 70, y: 55 + i * 70, id: i * 4 + j });
+        }
+      }
+
+      let drawing = false;
+      let path = [];
+      let currentX = 0;
+      let currentY = 0;
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (path.length > 0) {
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = "#f00";
+          ctx.strokeStyle = "#a00";
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(dots[path[0]].x, dots[path[0]].y);
+          for (let i = 1; i < path.length; i++) {
+            ctx.lineTo(dots[path[i]].x, dots[path[i]].y);
+          }
+          if (drawing) {
+            ctx.lineTo(currentX, currentY);
+          }
+          ctx.stroke();
+        }
+
+        ctx.shadowBlur = 0;
+
+        for (let d of dots) {
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, 10, 0, Math.PI * 2);
+          ctx.fillStyle = path.includes(d.id) ? "#a00" : "#111";
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "#333";
+          ctx.stroke();
+
+          ctx.font = '11px "Share Tech Mono", monospace';
+          ctx.fillStyle = "#666";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText((d.id + 1).toString(), d.x, d.y - 22);
+        }
+      }
+
+      function getCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+          clientX = e.changedTouches[0].clientX;
+          clientY = e.changedTouches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top,
+        };
+      }
+
+      function getDot(x, y) {
+        for (let d of dots) {
+          if (Math.hypot(d.x - x, d.y - y) < 22) return d;
+        }
+        return null;
+      }
+
+      function start(e) {
+        e.preventDefault();
+        drawing = true;
+        path = [];
+        const { x, y } = getCoords(e);
+        currentX = x;
+        currentY = y;
+        const d = getDot(x, y);
+        if (d) path.push(d.id);
+        draw();
+      }
+
+      function move(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        const { x, y } = getCoords(e);
+        currentX = x;
+        currentY = y;
+        const d = getDot(x, y);
+        if (d && !path.includes(d.id)) {
+          path.push(d.id);
+        }
+        draw();
+      }
+
+      const _t = [8, 13, 18, 43, 63, 68, 73, 78];
+      function _v(p) {
+        if (p.length !== 8) return false;
+        for (let i = 0; i < 8; i++) {
+          if (p[i] * 5 + 3 !== _t[i]) return false;
+        }
+        return true;
+      }
+
+      function end(e) {
+        if (!drawing) return;
+        drawing = false;
+        if (path.length > 0) {
+          if (_v(path)) {
+            document.body.style.transition = "opacity 2.5s ease";
+            document.body.style.opacity = "0";
+            setTimeout(() => (window.location.href = "12.html"), 2600);
+          } else {
+            canvas.style.backgroundColor = "rgba(150, 0, 0, 0.2)";
+            setTimeout(() => (canvas.style.backgroundColor = "#151515"), 250);
+            path = [];
+            draw();
+          }
+        }
+      }
+
+      canvas.addEventListener("mousedown", start);
+      canvas.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", end);
+
+      canvas.addEventListener("touchstart", start, { passive: false });
+      canvas.addEventListener("touchmove", move, { passive: false });
+      window.addEventListener("touchend", end);
+
+      draw();
+    </script>
+  </body>
+</html>
