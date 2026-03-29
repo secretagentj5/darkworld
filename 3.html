@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COSMOGENESIS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --text: rgba(180,215,255,0.85);
+  --dim:  rgba(140,180,230,0.35);
+  --accent: rgba(140,200,255,0.9);
+  --font: 'Courier New', monospace;
+}
+body{background:#000;overflow:hidden;font-family:var(--font);color:var(--text);cursor:crosshair}
+canvas{display:block;position:fixed;top:0;left:0}
+
+#pregame{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:#000;z-index:100;padding:2rem;
+}
+.pg-title{
+  font-size:clamp(1.8rem,5.5vw,4.5rem);
+  letter-spacing:clamp(0.4rem,1.8vw,1.4rem);
+  color:#fff;
+  text-shadow:0 0 40px rgba(160,210,255,0.55),0 0 90px rgba(90,150,255,0.25);
+  margin-bottom:0.4rem;
+  animation:titlePulse 4s ease-in-out infinite;
+}
+@keyframes titlePulse{
+  0%,100%{opacity:.85;text-shadow:0 0 40px rgba(160,210,255,0.55),0 0 90px rgba(90,150,255,0.25)}
+  50%{opacity:1;text-shadow:0 0 60px rgba(180,220,255,0.9),0 0 130px rgba(100,160,255,0.45)}
+}
+.pg-sub{
+  font-size:0.5rem;letter-spacing:0.45rem;color:var(--dim);
+  margin-bottom:3.5rem;text-transform:uppercase;
+}
+#singularity{
+  width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle at center,#fff 0%,#99c8ff 20%,#3355ff 55%,transparent 80%);
+  box-shadow:0 0 28px #88aaff,0 0 65px #4455ff,0 0 120px rgba(50,80,200,0.45);
+  margin-bottom:3.5rem;
+  animation:orbPulse 2.6s ease-in-out infinite;
+  position:relative;
+}
+#singularity::before{
+  content:'';position:absolute;inset:-18px;border-radius:50%;
+  background:radial-gradient(circle,rgba(140,190,255,0.12) 0%,transparent 70%);
+  animation:orbPulse 2.6s ease-in-out infinite reverse;
+}
+@keyframes orbPulse{
+  0%,100%{transform:scale(1);box-shadow:0 0 28px #88aaff,0 0 65px #4455ff,0 0 120px rgba(50,80,200,0.45)}
+  50%{transform:scale(1.38);box-shadow:0 0 50px #aaccff,0 0 110px #5566ff,0 0 200px rgba(80,110,255,0.55)}
+}
+
+#laws-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:1.8rem 4.5rem;margin-bottom:3rem;
+  max-width:540px;width:100%;
+}
+.law{display:flex;flex-direction:column;gap:0.5rem}
+.law-name{font-size:0.45rem;letter-spacing:0.35rem;color:var(--dim);text-transform:uppercase}
+.law-slider{
+  -webkit-appearance:none;appearance:none;width:100%;height:1px;
+  background:linear-gradient(to right,var(--accent) var(--pct,50%),rgba(255,255,255,0.1) var(--pct,50%));
+  outline:none;cursor:pointer;border:none;
+}
+.law-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:9px;height:9px;border-radius:50%;
+  background:#fff;box-shadow:0 0 7px rgba(180,215,255,0.9);cursor:pointer;
+}
+.law-meta{display:flex;justify-content:space-between;align-items:center}
+.law-value{font-size:0.46rem;color:var(--accent)}
+.law-hint{font-size:0.4rem;color:rgba(140,180,230,0.22);font-style:italic}
+.law-center{grid-column:1/-1;max-width:210px;margin:0 auto}
+
+#ignite{
+  padding:0.85rem 4.5rem;background:transparent;
+  border:1px solid rgba(130,195,255,0.28);
+  color:rgba(130,195,255,0.65);
+  font-family:var(--font);font-size:0.6rem;letter-spacing:0.6rem;
+  text-transform:lowercase;cursor:pointer;transition:all 0.4s;position:relative;overflow:hidden;
+}
+#ignite::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(130,195,255,0.04);
+  transform:scaleX(0);transition:transform 0.4s;transform-origin:left;
+}
+#ignite:hover::before{transform:scaleX(1)}
+#ignite:hover{border-color:rgba(130,195,255,0.75);color:#fff;box-shadow:0 0 25px rgba(130,195,255,0.12)}
+
+#hud{
+  position:fixed;top:0;left:0;right:0;
+  padding:1.4rem 2rem;z-index:50;pointer-events:none;
+  display:none;justify-content:space-between;align-items:flex-start;
+}
+#hud-left{text-align:left}
+#hud-right{text-align:right}
+.hud-label{font-size:0.4rem;letter-spacing:0.3rem;color:rgba(140,180,230,0.28);margin-bottom:0.25rem;text-transform:uppercase}
+.hud-value{font-size:0.62rem;letter-spacing:0.18rem;color:rgba(170,210,255,0.55)}
+
+#event-log{
+  position:fixed;bottom:1.8rem;left:2rem;
+  width:310px;display:none;flex-direction:column-reverse;
+  gap:0.35rem;z-index:50;pointer-events:none;
+  overflow:hidden;max-height:150px;
+}
+.ev{font-size:0.41rem;letter-spacing:0.08rem;color:rgba(170,210,255,0.3);animation:fadeUp 0.5s ease both;line-height:1.5}
+.ev .et{color:rgba(120,185,255,0.48)}
+.ev .em{color:rgba(180,215,255,0.55)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+#phase-banner{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;z-index:60;pointer-events:none;opacity:0;transition:opacity 0.7s;
+}
+.pb-main{
+  font-size:clamp(0.9rem,2.8vw,1.7rem);letter-spacing:clamp(0.3rem,1.5vw,0.8rem);
+  color:rgba(175,215,255,0.82);text-shadow:0 0 28px rgba(120,185,255,0.38);
+}
+.pb-sub{font-size:0.46rem;letter-spacing:0.32rem;color:rgba(140,180,230,0.38);margin-top:0.55rem;font-style:italic}
+
+#outcome{
+  position:fixed;inset:0;background:rgba(0,0,0,0);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  z-index:200;text-align:center;padding:2rem;transition:background 2s;
+}
+#outcome.visible{background:rgba(0,0,0,0.87)}
+.oc-eye{font-size:0.43rem;letter-spacing:0.5rem;color:rgba(140,180,230,0.38);margin-bottom:1.1rem}
+.oc-type{
+  font-size:clamp(1.3rem,3.8vw,3.2rem);letter-spacing:clamp(0.25rem,1.2vw,0.7rem);
+  color:#fff;margin-bottom:2rem;animation:titlePulse 4s infinite;
+}
+.oc-letter{
+  font-size:0.6rem;line-height:2.3;color:rgba(175,215,255,0.42);
+  max-width:510px;margin-bottom:2.5rem;font-style:italic;letter-spacing:0.04rem;
+}
+.oc-stats{display:flex;gap:4rem;margin-bottom:3rem}
+.oc-stat-val{font-size:1.7rem;color:rgba(120,190,255,0.78);display:block;letter-spacing:0.08rem}
+.oc-stat-lbl{font-size:0.38rem;letter-spacing:0.3rem;color:rgba(140,180,230,0.28);margin-top:0.35rem}
+
+#restart-btn{
+  padding:0.7rem 3rem;background:transparent;
+  border:1px solid rgba(130,195,255,0.22);
+  color:rgba(130,195,255,0.48);
+  font-family:var(--font);font-size:0.5rem;letter-spacing:0.45rem;
+  cursor:pointer;transition:all 0.4s;text-transform:lowercase;
+}
+#restart-btn:hover{border-color:rgba(130,195,255,0.65);color:rgba(180,225,255,0.88)}
+
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:155;transition:opacity 0.08s}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="flash"></div>
+
+<div id="pregame">
+  <div class="pg-title">COSMOGENESIS</div>
+  <div class="pg-sub">You are god &nbsp;·&nbsp; Set the laws &nbsp;·&nbsp; Ignite the universe</div>
+  <div id="singularity"></div>
+
+  <div id="laws-grid">
+    <div class="law">
+      <div class="law-name">Gravity Constant</div>
+      <input class="law-slider" type="range" id="sl-g" min="1" max="10" value="5">
+      <div class="law-meta"><span class="law-value" id="v-g">5</span><span class="law-hint">cohesion of matter</span></div>
+    </div>
+    <div class="law">
+      <div class="law-name">Dark Energy</div>
+      <input class="law-slider" type="range" id="sl-d" min="1" max="10" value="3">
+      <div class="law-meta"><span class="law-value" id="v-d">3</span><span class="law-hint">expansion of space</span></div>
+    </div>
+    <div class="law">
+      <div class="law-name">Electromagnetism</div>
+      <input class="law-slider" type="range" id="sl-e" min="1" max="10" value="5">
+      <div class="law-meta"><span class="law-value" id="v-e">5</span><span class="law-hint">chemical complexity</span></div>
+    </div>
+    <div class="law">
+      <div class="law-name">Quantum Chaos</div>
+      <input class="law-slider" type="range" id="sl-q" min="1" max="10" value="3">
+      <div class="law-meta"><span class="law-value" id="v-q">3</span><span class="law-hint">fundamental randomness</span></div>
+    </div>
+    <div class="law law-center">
+      <div class="law-name">Entropy Rate</div>
+      <input class="law-slider" type="range" id="sl-en" min="1" max="10" value="4">
+      <div class="law-meta"><span class="law-value" id="v-en">4</span><span class="law-hint">the arrow of time</span></div>
+    </div>
+  </div>
+
+  <button id="ignite">— ignite —</button>
+</div>
+
+<div id="hud">
+  <div id="hud-left">
+    <div class="hud-label">Phase</div>
+    <div class="hud-value" id="hud-phase">—</div>
+  </div>
+  <div id="hud-right">
+    <div class="hud-label">Universe Age</div>
+    <div class="hud-value" id="hud-age">0.00 Gy</div>
+  </div>
+</div>
+
+<div id="event-log"></div>
+
+<div id="phase-banner">
+  <div class="pb-main" id="pb-text"></div>
+  <div class="pb-sub"  id="pb-sub"></div>
+</div>
+
+<div id="outcome">
+  <div class="oc-eye">YOUR UNIVERSE HAS RUN ITS COURSE</div>
+  <div class="oc-type"   id="oc-type"></div>
+  <div class="oc-letter" id="oc-letter"></div>
+  <div class="oc-stats">
+    <div class="oc-stat"><span class="oc-stat-val" id="oc-age">—</span><div class="oc-stat-lbl">BILLION YEARS</div></div>
+    <div class="oc-stat"><span class="oc-stat-val" id="oc-stars">—</span><div class="oc-stat-lbl">STARS BORN</div></div>
+    <div class="oc-stat"><span class="oc-stat-val" id="oc-life">—</span><div class="oc-stat-lbl">LIFE INDEX</div></div>
+  </div>
+  <button id="restart-btn">— create another universe —</button>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, H, CX, CY;
+
+function resize(){
+  W = canvas.width  = innerWidth;
+  H = canvas.height = innerHeight;
+  CX = W/2; CY = H/2;
+}
+resize();
+addEventListener('resize', resize);
+
+let L = { g:5, d:3, e:5, q:3, en:4 };
+
+['g','d','e','q','en'].forEach(id => {
+  const sl = document.getElementById(`sl-${id}`);
+  const vl = document.getElementById(`v-${id}`);
+  function upd(){
+    vl.textContent = sl.value;
+    const pct = ((sl.value - sl.min)/(sl.max - sl.min))*100;
+    sl.style.setProperty('--pct', pct+'%');
+  }
+  sl.addEventListener('input', upd);
+  upd();
+});
+
+const PHASES = [
+  { name:'SINGULARITY',       sub:'all energy, no space',                        dur:4000  },
+  { name:'COSMIC INFLATION',  sub:'space expands faster than light can cross', dur:5500  },
+  { name:'QUARK ERA',         sub:'quarks and leptons scatter through the fire',dur:6000 },
+  { name:'NUCLEOSYNTHESIS',   sub:'the first atomic nuclei form',                dur:7000  },
+  { name:'DARK AGES',         sub:'the universe grows cold and opaque',         dur:5500  },
+  { name:'COSMIC DAWN',       sub:'first light tears through the dark',         dur:8000  },
+  { name:'GALAXY ERA',        sub:'gravity sculpts the cosmic web',             dur:11000 },
+  { name:'STELLAR MATURITY',  sub:'stars live, collapse, and scatter seeds',   dur:10000 },
+  { name:'ENTROPY',           sub:'the long twilight of all things',            dur:7000  },
+];
+
+let phase = -1, phaseStart = 0, simTime = 0;
+let simRunning = false, universeAge = 0;
+let totalStarsBorn = 0, lifeWorlds = 0;
+let lastFrame = 0, flashAlpha = 0;
+
+const MAX_PART = 1600;
+const MAX_STAR = 95;
+let particles = [], stars = [], galaxies = [];
+
+class Particle {
+  constructor(x, y, vx, vy, temp){
+    this.x=x; this.y=y; this.vx=vx; this.vy=vy;
+    this.temp=temp; this.age=0;
+    this.trail=[]; this.trailMax=7;
+  }
+  rgb(){
+    const t=this.temp;
+    if(t>.89) return [255,255,255];
+    if(t>.73) return [195,225,255];
+    if(t>.57) return [120,185,255];
+    if(t>.42) return [255,235,110];
+    if(t>.27) return [255,145,60];
+    if(t>.13) return [205,65,40];
+    return [72,22,22];
+  }
+  draw(){
+    const [r,g,b]=this.rgb();
+    const a=0.45+this.temp*0.55, sz=1.1+this.temp*1.3;
+    if(this.trail.length>1){
+      ctx.beginPath();
+      ctx.moveTo(this.trail[0].x,this.trail[0].y);
+      for(let i=1;i<this.trail.length;i++) ctx.lineTo(this.trail[i].x,this.trail[i].y);
+      ctx.lineTo(this.x,this.y);
+      ctx.strokeStyle=`rgba(${r},${g},${b},0.1)`;
+      ctx.lineWidth=0.7; ctx.stroke();
+    }
+    ctx.shadowBlur=this.temp>.5?10:3;
+    ctx.shadowColor=`rgba(${r},${g},${b},0.55)`;
+    ctx.fillStyle=`rgba(${r},${g},${b},${a})`;
+    ctx.beginPath(); ctx.arc(this.x,this.y,sz,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  }
+}
+
+class Star {
+  constructor(x,y){
+    this.x=x; this.y=y;
+    this.vx=(Math.random()-.5)*.22;
+    this.vy=(Math.random()-.5)*.22;
+    this.mass=2+Math.random()*12;
+    this.age=0; this.type='protostar';
+    this.radius=2+this.mass*.32;
+    this.temp=1; this.dead=false;
+    this.evolveAt=0; this.superTimer=0;
+    this.hasLife=false; this.lifePulse=0; this.lifeAge=0;
+    this.galaxyId=-1;
+  }
+  rgb(){
+    switch(this.type){
+      case'protostar': return[165,185,255];
+      case'main':
+        if(this.mass>14) return[130,175,255];
+        if(this.mass>8)  return[225,235,255];
+        if(this.mass>4)  return[255,255,205];
+        return[255,225,155];
+      case'giant':    return[255,165,80];
+      case'supernova':return[255,252,225];
+      case'neutron':  return[175,215,255];
+      case'blackhole':return[18,12,30];
+      default:        return[200,200,200];
+    }
+  }
+  gf(){
+    const m={protostar:.28,main:.52+this.mass*.02,giant:.78,supernova:2.9,neutron:.42,blackhole:.04};
+    return m[this.type]||.28;
+  }
+  draw(){
+    if(this.dead) return;
+    const[r,g,b]=this.rgb(), glow=this.gf();
+    const glowR=this.radius*(2.8+glow*3);
+
+    if(this.type!=='blackhole'){
+      const gr=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,glowR*2.5);
+      gr.addColorStop(0,`rgba(${r},${g},${b},${glow*.16})`);
+      gr.addColorStop(1,`rgba(${r},${g},${b},0)`);
+      ctx.fillStyle=gr;
+      ctx.beginPath(); ctx.arc(this.x,this.y,glowR*2.5,0,Math.PI*2); ctx.fill();
+    }
+
+    if(this.type==='supernova'){
+      const prog=1-(this.superTimer/1800);
+      const rR=this.radius*(1+prog*7);
+      const sng=ctx.createRadialGradient(this.x,this.y,this.radius,this.x,this.y,rR);
+      sng.addColorStop(0,`rgba(255,245,185,${(1-prog)*.58})`);
+      sng.addColorStop(.45,`rgba(255,155,75,${(1-prog)*.28})`);
+      sng.addColorStop(1,`rgba(200,75,45,0)`);
+      ctx.fillStyle=sng;
+      ctx.beginPath(); ctx.arc(this.x,this.y,rR,0,Math.PI*2); ctx.fill();
+    }
+
+    const cg=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,glowR);
+    cg.addColorStop(0,`rgba(${r},${g},${b},${glow*.48})`);
+    cg.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    ctx.fillStyle=cg;
+    ctx.beginPath(); ctx.arc(this.x,this.y,glowR,0,Math.PI*2); ctx.fill();
+
+    ctx.shadowBlur=18; ctx.shadowColor=`rgb(${r},${g},${b})`;
+    ctx.fillStyle=`rgb(${r},${g},${b})`;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+
+    if(this.type==='main'||this.type==='supernova'){
+      ctx.fillStyle='rgba(255,255,255,.85)';
+      ctx.beginPath(); ctx.arc(this.x,this.y,this.radius*.36,0,Math.PI*2); ctx.fill();
+    }
+
+    if(this.type==='blackhole'){
+      ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.age*.0004);
+      for(let i=0;i<3;i++){
+        const eR=this.radius*(3+i*1.6);
+        ctx.strokeStyle=`rgba(${110-i*25},${50-i*12},${190-i*35},${.32-i*.09})`;
+        ctx.lineWidth=1.4-i*.38;
+        ctx.beginPath(); ctx.ellipse(0,0,eR,eR*.28,0,0,Math.PI*2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    if(this.hasLife){
+      this.lifePulse+=.028; this.lifeAge++;
+      const lp=.28+.22*Math.sin(this.lifePulse);
+      ctx.strokeStyle=`rgba(75,255,135,${lp})`;
+      ctx.lineWidth=.7;
+      ctx.beginPath(); ctx.arc(this.x,this.y,this.radius*3,0,Math.PI*2); ctx.stroke();
+      for(let i=0;i<6;i++){
+        const a=(i/6)*Math.PI*2+this.lifeAge*.0005;
+        ctx.fillStyle=`rgba(140,255,175,${lp*.85})`;
+        ctx.beginPath();
+        ctx.arc(this.x+Math.cos(a)*this.radius*3,this.y+Math.sin(a)*this.radius*3,.85,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+class Galaxy {
+  constructor(x,y){
+    this.x=x; this.y=y;
+    this.arms=2+Math.floor(Math.random()*3);
+    this.rotation=Math.random()*Math.PI*2;
+    this.rotSpeed=(Math.random()-.5)*.0007;
+    this.radius=72+Math.random()*88;
+    this.age=0;
+    this.color=Math.random()<.35?[255,200,130]:[160,205,255];
+  }
+  draw(){
+    ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(this.rotation);
+    const[r,g,b]=this.color;
+    const bg=ctx.createRadialGradient(0,0,0,0,0,22);
+    bg.addColorStop(0,`rgba(${r},${g},${b},.1)`);
+    bg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(0,0,28,0,Math.PI*2); ctx.fill();
+    for(let arm=0;arm<this.arms;arm++){
+      const ar=(arm/this.arms)*Math.PI*2;
+      for(let i=0;i<52;i++){
+        const t=i/52, r2=t*this.radius;
+        const ang=ar+t*Math.PI*2.9;
+        const sp=r2*.18;
+        const sx=Math.cos(ang)*r2+(Math.random()-.5)*sp;
+        const sy=Math.sin(ang)*r2+(Math.random()-.5)*sp;
+        ctx.fillStyle=`rgba(${r},${g},${b},${.055*(1-t*.8)})`;
+        ctx.beginPath(); ctx.arc(sx,sy,7+t*13,0,Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+}
+
+let ac, mGain;
+
+function initAudio(){
+  try{
+    ac=new(AudioContext||webkitAudioContext)();
+    mGain=ac.createGain(); mGain.gain.value=.22; mGain.connect(ac.destination);
+    [[40,.11],[80,.046],[120,.022],[160,.013]].forEach(([f,v])=>{
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.frequency.value=f; o.type='sine'; g.gain.value=v;
+      o.connect(g); g.connect(mGain); o.start();
+    });
+  }catch(e){}
+}
+
+function snd(fn){try{fn()}catch(e){}}
+
+function bangSound(){
+  if(!ac) return;
+  snd(()=>{
+    const buf=ac.createBuffer(1,ac.sampleRate*.65,ac.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const g=ac.createGain(); g.gain.setValueAtTime(2,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.65);
+    const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=170;
+    src.connect(lp); lp.connect(g); g.connect(mGain); src.start();
+    const sub=ac.createOscillator(), sg=ac.createGain();
+    sub.frequency.setValueAtTime(95,ac.currentTime);
+    sub.frequency.exponentialRampToValueAtTime(18,ac.currentTime+1.6);
+    sg.gain.setValueAtTime(2.6,ac.currentTime);
+    sg.gain.exponentialRampToValueAtTime(.001,ac.currentTime+2);
+    sub.connect(sg); sg.connect(mGain); sub.start(); sub.stop(ac.currentTime+2);
+  });
+}
+
+function starSound(){
+  if(!ac) return;
+  snd(()=>{
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.frequency.setValueAtTime(1100+Math.random()*700,ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(240,ac.currentTime+.28);
+    g.gain.setValueAtTime(.18,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.28);
+    o.connect(g); g.connect(mGain); o.start(); o.stop(ac.currentTime+.28);
+  });
+}
+
+function supernovaSound(){
+  if(!ac) return;
+  snd(()=>{
+    const buf=ac.createBuffer(1,ac.sampleRate*2.2,ac.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(ac.sampleRate*.38));
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const g=ac.createGain(); g.gain.setValueAtTime(.9,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+2.2);
+    const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=380;
+    src.connect(lp); lp.connect(g); g.connect(mGain); src.start();
+  });
+}
+
+function logEvent(text, em){
+  const log=document.getElementById('event-log');
+  const e=document.createElement('div'); e.className='ev';
+  e.innerHTML=`<span class="et">t=${universeAge.toFixed(2)}Gy</span> — <span class="${em?'em':''}">${text}</span>`;
+  log.prepend(e);
+  while(log.children.length>6) log.removeChild(log.lastChild);
+}
+
+function showBanner(name,sub){
+  const el=document.getElementById('phase-banner');
+  document.getElementById('pb-text').textContent=name;
+  document.getElementById('pb-sub').textContent=sub;
+  el.style.opacity='1';
+  setTimeout(()=>{ el.style.opacity='0'; },2800);
+}
+
+function nextPhase(){
+  phase++;
+  if(phase>=PHASES.length){ endSim(); return; }
+  phaseStart=simTime;
+  const p=PHASES[phase];
+  showBanner(p.name,p.sub);
+  document.getElementById('hud-phase').textContent=p.name;
+  onPhaseStart(phase);
+}
+
+function onPhaseStart(ph){
+  switch(ph){
+    case 0:
+      logEvent('In the beginning, nothing. Then everything.', true);
+      break;
+    case 1:
+      logEvent('Space itself tears open — expanding beyond the speed of light.');
+      for(let i=0; i<240 && particles.length<MAX_PART; i++){
+        const a=Math.random()*Math.PI*2, sp=1.5+Math.random()*5*(1+L.d*.22);
+        particles.push(new Particle(CX+(Math.random()-.5)*18,CY+(Math.random()-.5)*18,
+          Math.cos(a)*sp,Math.sin(a)*sp,.88+Math.random()*.1));
+      }
+      break;
+    case 2:
+      logEvent(`Quark density: ${(100+L.g*30).toFixed(0)} trillion per cm³. The universe is a plasma.`);
+      break;
+    case 3:
+      logEvent('Protons and neutrons fuse. Hydrogen and helium nuclei take shape.');
+      break;
+    case 4:
+      logEvent('Photons decouple. The cosmos falls into a cold, dark silence.');
+      particles.forEach(p=>{ p.temp=Math.max(.05,p.temp*.55); });
+      break;
+    case 5:
+      logEvent('Ultraviolet light carves the darkness. Reionization begins.', true);
+      spawnFirstStars();
+      break;
+    case 6:
+      logEvent('Gravity weaves the first filaments of the cosmic web.', true);
+      spawnGalaxies();
+      break;
+    case 7:
+      checkForLife();
+      if(lifeWorlds>0) logEvent(`Life detected on ${lifeWorlds} world${lifeWorlds>1?'s':''}.`, true);
+      else logEvent('The cosmos remains magnificent, silent, and sterile.');
+      stars.forEach(s=>{ if(s.type==='main') s.evolveAt=s.age+2200+Math.random()*3200; });
+      break;
+    case 8:
+      logEvent('The last stellar nurseries grow cold. The long dark begins.');
+      break;
+  }
+}
+
+function spawnFirstStars(){
+  const count=12+Math.floor(L.g*2.8);
+  for(let i=0; i<count && stars.length<MAX_STAR; i++){
+    let sx=CX+(Math.random()-.5)*Math.min(W,H)*.48;
+    let sy=CY+(Math.random()-.5)*Math.min(W,H)*.48;
+    if(particles.length>0){
+      const seed=particles[Math.floor(Math.random()*particles.length)];
+      sx=seed.x+(Math.random()-.5)*65; sy=seed.y+(Math.random()-.5)*65;
+    }
+    const s=new Star(sx,sy);
+    s.type='protostar'; s.radius=2+s.mass*.28;
+    stars.push(s); totalStarsBorn++;
+    if(i%4===0) starSound();
+  }
+  logEvent(`${count} protostellar cores ignite in the void.`);
+}
+
+function spawnGalaxies(){
+  const gCount=3+Math.floor(L.g*.65);
+  for(let i=0; i<gCount; i++){
+    const a=Math.random()*Math.PI*2;
+    const dist=95+Math.random()*Math.min(W,H)*.32;
+    galaxies.push(new Galaxy(CX+Math.cos(a)*dist, CY+Math.sin(a)*dist));
+  }
+  galaxies.forEach((gal,gi)=>{
+    const count=10+Math.floor(L.g*3.2);
+    for(let i=0; i<count && stars.length<MAX_STAR; i++){
+      const a=Math.random()*Math.PI*2, d2=18+Math.random()*gal.radius*.82;
+      const s=new Star(gal.x+Math.cos(a)*d2, gal.y+Math.sin(a)*d2);
+      s.type=Math.random()<.28?'protostar':'main'; s.radius=2+s.mass*.24; s.galaxyId=gi;
+      stars.push(s); totalStarsBorn++;
+    }
+  });
+  if(stars.length>4) starSound();
+  logEvent(`${galaxies.length} galaxies crystallize from the cosmic filaments.`, true);
+}
+
+function checkForLife(){
+  const {g,d,e,q}=L;
+  const ok=g>=3&&g<=7&&d>=2&&d<=6&&q<=6&&e>=3&&e<=8;
+  if(!ok) return;
+  stars.forEach(s=>{
+    if(s.type==='main'&&s.mass<9&&!s.hasLife){
+      const chance=(1-q/12)*(e/10)*.42;
+      if(Math.random()<chance){ s.hasLife=true; lifeWorlds++; }
+    }
+  });
+}
+
+function updatePhysics(dt){
+  const G=L.g*.007, DE=L.d*.00062, chaos=L.q*.0038, cool=L.en*.000014;
+  const dead=new Set();
+
+  for(let i=0; i<particles.length; i++){
+    const p=particles[i];
+    const dx0=p.x-CX, dy0=p.y-CY, dist0=Math.sqrt(dx0*dx0+dy0*dy0)+1;
+    p.vx+=(dx0/dist0)*DE*dt*.1; p.vy+=(dy0/dist0)*DE*dt*.1;
+
+    if(phase>=5){
+      for(const s of stars){
+        if(s.dead) continue;
+        const dx=s.x-p.x, dy=s.y-p.y, dist=Math.sqrt(dx*dx+dy*dy)+1;
+        if(dist<165){ const f=G*s.mass/(dist*dist); p.vx+=(dx/dist)*f*dt*.1; p.vy+=(dy/dist)*f*dt*.1; }
+        if(dist<s.radius+3){ s.mass+=.08; s.radius=Math.min(18,s.radius+.04); dead.add(i); break; }
+      }
+    }
+
+    if(phase>=2&&phase<=5){
+      for(let j=i+1; j<Math.min(i+18,particles.length); j++){
+        const p2=particles[j];
+        const dx=p2.x-p.x, dy=p2.y-p.y, dist=Math.sqrt(dx*dx+dy*dy)+1;
+        if(dist<72){
+          const f=G*.38/(dist*dist);
+          p.vx+=(dx/dist)*f*dt*.1; p.vy+=(dy/dist)*f*dt*.1;
+          p2.vx-=(dx/dist)*f*dt*.1; p2.vy-=(dy/dist)*f*dt*.1;
+        }
+        if(dist<4&&phase>=4&&stars.length<MAX_STAR){
+          const s=new Star((p.x+p2.x)/2,(p.y+p2.y)/2);
+          s.vx=(p.vx+p2.vx)*.5; s.vy=(p.vy+p2.vy)*.5;
+          s.mass=1; s.type='protostar'; s.radius=2;
+          stars.push(s); totalStarsBorn++;
+          dead.add(i); dead.add(j);
+        }
+      }
+    }
+
+    p.vx+=(Math.random()-.5)*chaos*dt*.1;
+    p.vy+=(Math.random()-.5)*chaos*dt*.1;
+    p.vx*=.9995; p.vy*=.9995;
+    p.temp=Math.max(0,p.temp-cool*dt);
+    p.trail.push({x:p.x,y:p.y});
+    if(p.trail.length>p.trailMax) p.trail.shift();
+    p.x+=p.vx*dt*.1; p.y+=p.vy*dt*.1; p.age+=dt;
+    const B=Math.max(W,H)*1.15;
+    if(Math.abs(p.x-CX)>B||Math.abs(p.y-CY)>B) dead.add(i);
+  }
+  particles=particles.filter((_,i)=>!dead.has(i));
+
+  if(phase>=4&&phase<=5&&stars.length<MAX_STAR&&Math.random()<.015&&particles.length>8){
+    const seed=particles[Math.floor(Math.random()*particles.length)];
+    let nearby=0;
+    for(const p of particles){ const dx=p.x-seed.x,dy=p.y-seed.y; if(dx*dx+dy*dy<1600) nearby++; }
+    if(nearby>4){
+      const s=new Star(seed.x,seed.y);
+      s.vx=seed.vx*.4; s.vy=seed.vy*.4; s.mass=1; s.type='protostar'; s.radius=2;
+      stars.push(s); totalStarsBorn++;
+    }
+  }
+
+  const deadStars=new Set();
+  for(let i=0; i<stars.length; i++){
+    const s=stars[i];
+    if(s.dead){ deadStars.add(i); continue; }
+    s.age+=dt; s.x+=s.vx; s.y+=s.vy;
+
+    if(s.galaxyId>=0&&s.galaxyId<galaxies.length){
+      const gal=galaxies[s.galaxyId];
+      const gdx=gal.x-s.x, gdy=gal.y-s.y, gd=Math.sqrt(gdx*gdx+gdy*gdy)+1;
+      s.vx+=(gdx/gd)*G*1.7; s.vy+=(gdy/gd)*G*1.7;
+      s.vx+=(-gdy/gd)*.11; s.vy+=(gdx/gd)*.11;
+      s.vx*=.972; s.vy*=.972;
+    }
+
+    if(s.type==='protostar'&&s.age>1300){ s.type='main'; s.radius=Math.max(3,s.radius); if(Math.random()<.22) starSound(); }
+
+    if(phase>=7&&s.evolveAt>0&&s.age>s.evolveAt){
+      if(s.type==='main'){
+        s.type='giant'; s.radius*=2.3; s.evolveAt=s.age+1300;
+        logEvent('A star swells into a red giant, consuming its inner planets.');
+      } else if(s.type==='giant'){
+        s.type='supernova'; s.superTimer=1800;
+        supernovaSound();
+        logEvent('Supernova — a star dies in a blaze that outshines its galaxy.', true);
+        for(let k=0; k<20&&particles.length<MAX_PART; k++){
+          const a=Math.random()*Math.PI*2, sp=2.2+Math.random()*5;
+          particles.push(new Particle(s.x,s.y,Math.cos(a)*sp,Math.sin(a)*sp,.62+Math.random()*.32));
+        }
+      }
+    }
+
+    if(s.type==='supernova'){
+      s.superTimer-=dt;
+      if(s.superTimer<=0){
+        if(s.mass>10){ s.type='blackhole'; s.radius=5; logEvent('A black hole is born from stellar collapse.'); }
+        else { s.type='neutron'; s.radius=2; logEvent('A neutron star spins in the wreckage.'); }
+        s.superTimer=0;
+      }
+    }
+
+    if(s.type==='blackhole'){
+      for(let j=0; j<stars.length; j++){
+        if(j===i||stars[j].dead) continue;
+        const bdx=s.x-stars[j].x, bdy=s.y-stars[j].y, bd=Math.sqrt(bdx*bdx+bdy*bdy)+1;
+        stars[j].vx+=(bdx/bd)*G*s.mass*.009;
+        stars[j].vy+=(bdy/bd)*G*s.mass*.009;
+        if(bd<17){ s.mass+=stars[j].mass*.5; s.radius=Math.min(22,s.radius+.7); stars[j].dead=true; }
+      }
+    }
+
+    if(phase>=8){
+      s.temp=Math.max(0,s.temp-.000075*dt);
+      if(s.temp<.05&&s.type!=='blackhole'&&s.type!=='neutron') s.dead=true;
+    }
+  }
+  stars=stars.filter((_,i)=>!deadStars.has(i));
+
+  galaxies.forEach(g=>{ g.rotation+=g.rotSpeed; g.age+=dt; });
+  universeAge+=dt*.0038;
+}
+
+function render(){
+  const fade=phase>=6?.11:.22;
+  ctx.fillStyle=`rgba(0,0,0,${fade})`;
+  ctx.fillRect(0,0,W,H);
+
+  if(phase>=6) galaxies.forEach(g=>g.draw());
+  particles.forEach(p=>p.draw());
+  stars.forEach(s=>s.draw());
+
+  if(flashAlpha>0){
+    document.getElementById('flash').style.opacity=flashAlpha;
+    flashAlpha=Math.max(0,flashAlpha-.022);
+    if(flashAlpha<=0) document.getElementById('flash').style.opacity=0;
+  }
+}
+
+function endSim(){
+  simRunning=false;
+  setTimeout(()=>{
+    const{g,d,q,e}=L;
+    let type, letter;
+
+    if(d>=8){
+      type='THE EMPTY COSMOS';
+      letter='Dark energy was your absolute will, and space obeyed. Before a single atom could find another, the void between them became infinite. A trillion cold sparks drift through your universe now — each alone, unreachable, forever. Beautiful. Irretrievably lonely.';
+    } else if(g>=9&&d<=2){
+      type='THE CRUSHING DARK';
+      letter='You gave matter an iron gravity and gave space no room to breathe. Everything fell inward — particles, light, time itself — until all of your creation compressed back into a single point indistinguishable from the one you began with. It waits. Perhaps it will try again.';
+    } else if(q>=9){
+      type='THE MAD COSMOS';
+      letter='You set chaos loose at the foundations. No force held its shape for long, no law was obeyed twice. The patterns it made — brief, impossible, unrepeatable — were more original than anything order could have managed. It was not a failure. It was art.';
+    } else if(lifeWorlds>6){
+      type='THE LIVING COSMOS';
+      letter=`Across ${lifeWorlds} worlds in your galaxies, chemistry became curiosity. Creatures opened eyes that had never existed before and looked up at a universe they didn't ask to be born into — but chose, nonetheless, to love. They named your stars. They told stories. They were real.`;
+    } else if(lifeWorlds>0){
+      type='THE AWAKENED COSMOS';
+      letter=`On ${lifeWorlds} pale world${lifeWorlds>1?'s':''} in your vast creation, something impossible happened: life. It was brief. It looked at your stars and wondered what it was and where it came from. It may never have found an answer. But it asked — and in asking, it was not alone.`;
+    } else if(totalStarsBorn>45){
+      type='THE STELLAR COSMOS';
+      letter='Your universe blazed with stars — thousands of nuclear furnaces burning across every quadrant of the void, forging iron in their cores, painting galaxies. Grand, beautiful, and utterly silent. No mind ever looked up and named a single one. But they burned fiercely, and that was its own kind of meaning.';
+    } else if(totalStarsBorn>8){
+      type='THE SPARSE COSMOS';
+      letter='A handful of stars lit your universe — small islands of warmth in an ocean of cold. Each one was precious in its solitude. They burned for billions of years without witness, then went dark, one by one, leaving only faint radio echoes of something that mattered, once.';
+    } else {
+      type='THE VOID';
+      letter='Nothing endured. The laws you chose gave matter no path to hold together. Your universe was a brief, brilliant flash — and then less than silence. Even darkness is too rich a word for what remains. And yet: for a moment, something was here. That is not nothing.';
+    }
+
+    document.getElementById('oc-type').textContent=type;
+    document.getElementById('oc-letter').textContent=letter;
+    document.getElementById('oc-age').textContent=universeAge.toFixed(1);
+    document.getElementById('oc-stars').textContent=totalStarsBorn;
+    document.getElementById('oc-life').textContent=lifeWorlds>0?`${lifeWorlds} world${lifeWorlds>1?'s':''}`:' none';
+
+    const oc=document.getElementById('outcome');
+    oc.style.display='flex';
+    requestAnimationFrame(()=>oc.classList.add('visible'));
+  }, 2800);
+}
+
+function startBang(){
+  L.g =parseInt(document.getElementById('sl-g').value);
+  L.d =parseInt(document.getElementById('sl-d').value);
+  L.e =parseInt(document.getElementById('sl-e').value);
+  L.q =parseInt(document.getElementById('sl-q').value);
+  L.en=parseInt(document.getElementById('sl-en').value);
+
+  particles=[]; stars=[]; galaxies=[];
+  totalStarsBorn=0; lifeWorlds=0;
+  simTime=0; universeAge=0; phase=-1; flashAlpha=0;
+
+  document.getElementById('pregame').style.display='none';
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('event-log').style.display='flex';
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+
+  initAudio();
+
+  const pCount=Math.min(MAX_PART, 720+L.g*52);
+  for(let i=0; i<pCount; i++){
+    const a=Math.random()*Math.PI*2, sp=.45+Math.random()*7*(1+L.d*.18);
+    particles.push(new Particle(
+      CX+(Math.random()-.5)*9, CY+(Math.random()-.5)*9,
+      Math.cos(a)*sp, Math.sin(a)*sp, .93+Math.random()*.07
+    ));
+  }
+
+  flashAlpha=1;
+  bangSound();
+  simRunning=true;
+  lastFrame=performance.now();
+  nextPhase();
+  requestAnimationFrame(loop);
+}
+
+let lastHudTick=0;
+
+function loop(now){
+  if(!simRunning) return;
+  const dt=Math.min(now-lastFrame, 50);
+  lastFrame=now; simTime+=dt;
+
+  updatePhysics(dt);
+  render();
+
+  if(simTime-lastHudTick>380){
+    document.getElementById('hud-age').textContent=`${universeAge.toFixed(2)} Gy`;
+    lastHudTick=simTime;
+  }
+
+  if(phase>=0&&phase<PHASES.length&&simTime-phaseStart>PHASES[phase].dur) nextPhase();
+
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('ignite').addEventListener('click', startBang);
+document.getElementById('restart-btn').addEventListener('click',()=>{
+  document.getElementById('outcome').classList.remove('visible');
+  document.getElementById('outcome').style.display='none';
+  document.getElementById('hud').style.display='none';
+  document.getElementById('event-log').style.display='none';
+  document.getElementById('event-log').innerHTML='';
+  ctx.clearRect(0,0,W,H);
+  drawBg();
+  document.getElementById('pregame').style.display='flex';
+});
+
+function drawBg(){
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  for(let i=0; i<280; i++){
+    const x=Math.random()*W, y=Math.random()*H;
+    const r=Math.random()*1.3, a=.08+Math.random()*.38;
+    ctx.fillStyle=`rgba(200,220,255,${a})`;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+}
+drawBg();
+</script>
+</body>
+</html>
