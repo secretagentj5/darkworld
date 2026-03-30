@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_018 // PSYCHIC_DRIVING</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&display=swap");
+
+      body {
+        background-color: #0a0c0a;
+        color: #c7d1c9;
+        font-family: "Special Elite", monospace;
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow-x: hidden;
+        user-select: none;
+        box-sizing: border-box;
+      }
+
+      .static-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="s"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23s)"/></svg>');
+        opacity: 0.08;
+        pointer-events: none;
+        z-index: 100;
+      }
+
+      .interface {
+        background: #151815;
+        width: 100%;
+        max-width: 1000px;
+        border: 6px solid #050505;
+        border-radius: 4px;
+        box-shadow:
+          0 20px 50px rgba(0, 0, 0, 0.9),
+          inset 0 0 30px #000;
+        display: flex;
+        flex-wrap: wrap;
+        z-index: 10;
+        position: relative;
+        opacity: 0.3;
+        filter: blur(4px);
+        pointer-events: none;
+        transition: all 1s ease;
+      }
+
+      .document-view {
+        flex: 1 1 400px;
+        background: #d6d0ba;
+        color: #1a1a1a;
+        padding: 40px;
+        font-family: "Courier Prime", monospace;
+        box-shadow: inset -10px 0 30px rgba(0, 0, 0, 0.3);
+        position: relative;
+        box-sizing: border-box;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .redacted {
+        background-color: #000;
+        color: #000;
+      }
+
+      .stamp {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        color: #8b0000;
+        border: 3px solid #8b0000;
+        padding: 5px 10px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        transform: rotate(15deg);
+        opacity: 0.7;
+        letter-spacing: 2px;
+      }
+
+      .tape-deck {
+        flex: 1 1 400px;
+        background: #1c1e1c;
+        display: flex;
+        flex-direction: column;
+        padding: 30px;
+        box-sizing: border-box;
+        border-left: 2px solid #000;
+      }
+
+      .reels {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 40px;
+        margin-top: 20px;
+      }
+
+      .reel {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: #111;
+        border: 6px solid #333;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+      }
+
+      .reel::before {
+        content: "";
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        background: #222;
+        border-radius: 50%;
+        border: 2px solid #111;
+      }
+
+      .reel::after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: conic-gradient(
+          transparent 40%,
+          rgba(200, 200, 200, 0.15) 45%,
+          transparent 50%
+        );
+      }
+
+      .spin {
+        animation: spin 3s linear infinite;
+      }
+
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .control-panel {
+        background: #0a0c0a;
+        border: 2px solid #000;
+        padding: 20px;
+        border-radius: 4px;
+        box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .slider-label {
+        font-size: 1rem;
+        color: #889988;
+        letter-spacing: 2px;
+        width: 80px;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        flex: 1;
+        height: 8px;
+        background: #050505;
+        border: 1px solid #222;
+        border-radius: 4px;
+        outline: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 30px;
+        background: #667766;
+        border: 2px solid #889988;
+        cursor: ew-resize;
+        border-radius: 2px;
+        box-shadow: 0 0 5px #000;
+      }
+
+      .val-display {
+        background: #000;
+        color: #ff3333;
+        font-family: "Courier Prime", monospace;
+        padding: 5px;
+        border: 2px solid #222;
+        font-size: 1.2rem;
+        width: 40px;
+        text-align: center;
+        border-radius: 3px;
+      }
+
+      .btn-play {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #0a0c0a;
+        border: 2px solid #8b0000;
+        color: #8b0000;
+        padding: 20px 40px;
+        font-family: "Special Elite", monospace;
+        font-size: 1.5rem;
+        cursor: pointer;
+        z-index: 50;
+        transition: 0.3s;
+        letter-spacing: 3px;
+        box-shadow: 0 0 20px rgba(139, 0, 0, 0.2);
+      }
+
+      .btn-play:hover {
+        background: #8b0000;
+        color: #0a0c0a;
+        box-shadow: 0 0 30px rgba(139, 0, 0, 0.6);
+      }
+
+      .screen-flash {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #fff;
+        z-index: 300;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .shake {
+        animation: machine-shake 0.1s infinite;
+      }
+
+      @keyframes machine-shake {
+        0% {
+          transform: translate(1px, 1px) rotate(0deg);
+        }
+        50% {
+          transform: translate(-1px, -1px) rotate(-0.5deg);
+        }
+        100% {
+          transform: translate(1px, -1px) rotate(0.5deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="static-overlay"></div>
+    <div class="screen-flash" id="flash"></div>
+
+    <button class="btn-play" id="btn-init">INITIATE PLAYBACK</button>
+
+    <div class="interface" id="main-ui">
+      <div class="document-view">
+        <div class="stamp">CLASSIFIED</div>
+        <h2
+          style="
+            margin-top: 0;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+          "
+        >
+          PROJECT MK-ULTRA // 1957-1973
+        </h2>
+        <p>
+          The Trinity breach wasn't contained. The radiation infected the
+          atmosphere, and then it infected the cerebral cortex. The Agency
+          thought it was a weapon they could harness.
+        </p>
+        <p>
+          They strapped patients into chairs, dosed them with lysergic acid, and
+          forced them to listen to audio loops for days. They called it "Psychic
+          Driving." They were trying to overwrite the human mind.
+        </p>
+        <p>Instead, the patients became receivers for the rot.</p>
+        <p>
+          To purge the residual signal from this tape, you must tune the three
+          bands to the historical anchors of the nightmare:
+        </p>
+        <br />
+        <ul style="padding-left: 20px">
+          <li style="margin-bottom: 10px">
+            <strong>BAND I:</strong> The specific subproject number managed by
+            Dr. Cameron in Montreal, where the worst of the psychic driving
+            occurred.
+          </li>
+          <li style="margin-bottom: 10px">
+            <strong>BAND II:</strong> The year the Director panicked and ordered
+            every piece of paper related to the project destroyed.
+          </li>
+          <li style="margin-bottom: 10px">
+            <strong>BAND III:</strong> The year the first silver sphere was
+            launched into the dark by the Soviets, reflecting the signal back
+            down to us all.
+          </li>
+        </ul>
+        <p>Tune the frequency. Erase the tape.</p>
+      </div>
+
+      <div class="tape-deck">
+        <div
+          style="
+            color: #667766;
+            text-align: center;
+            font-size: 1.2rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+          "
+        >
+          AUDIO EXTRACTION TERMINAL<br /><span style="font-size: 0.8rem"
+            >PROPERTY OF <span class="redacted">US GOV</span></span
+          >
+        </div>
+
+        <div class="reels">
+          <div class="reel" id="reel1"></div>
+          <div class="reel" id="reel2"></div>
+        </div>
+
+        <div class="control-panel">
+          <div class="slider-container">
+            <div class="slider-label">BAND I</div>
+            <input type="range" id="sl-1" min="10" max="99" value="10" />
+            <div class="val-display" id="val-1">10</div>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">BAND II</div>
+            <input type="range" id="sl-2" min="10" max="99" value="10" />
+            <div class="val-display" id="val-2">10</div>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label">BAND III</div>
+            <input type="range" id="sl-3" min="10" max="99" value="10" />
+            <div class="val-display" id="val-3">10</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const btnInit = document.getElementById("btn-init");
+      const mainUi = document.getElementById("main-ui");
+      const reels = document.querySelectorAll(".reel");
+      const flash = document.getElementById("flash");
+
+      const sl1 = document.getElementById("sl-1");
+      const sl2 = document.getElementById("sl-2");
+      const sl3 = document.getElementById("sl-3");
+      const val1 = document.getElementById("val-1");
+      const val2 = document.getElementById("val-2");
+      const val3 = document.getElementById("val-3");
+
+      let audioCtx, osc, noise, noiseFilter, masterGain;
+      let isUnlocked = false;
+
+      function initAudio() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.15;
+        masterGain.connect(audioCtx.destination);
+
+        osc = audioCtx.createOscillator();
+        osc.type = "sawtooth";
+        osc.frequency.value = 60;
+        osc.connect(masterGain);
+        osc.start();
+
+        const bufferSize = audioCtx.sampleRate * 2;
+        const buffer = audioCtx.createBuffer(
+          1,
+          bufferSize,
+          audioCtx.sampleRate,
+        );
+        const output = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+
+        noiseFilter = audioCtx.createBiquadFilter();
+        noiseFilter.type = "bandpass";
+        noiseFilter.frequency.value = 1000;
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(masterGain);
+        noise.start();
+      }
+
+      btnInit.addEventListener("click", () => {
+        btnInit.style.display = "none";
+        mainUi.style.filter = "none";
+        mainUi.style.opacity = "1";
+        mainUi.style.pointerEvents = "all";
+
+        reels.forEach((r) => r.classList.add("spin"));
+
+        initAudio();
+        updateSystem();
+      });
+
+      function updateSystem() {
+        if (isUnlocked) return;
+
+        let v1 = parseInt(sl1.value);
+        let v2 = parseInt(sl2.value);
+        let v3 = parseInt(sl3.value);
+
+        val1.innerText = v1;
+        val2.innerText = v2;
+        val3.innerText = v3;
+
+        let err = Math.abs(v1 - 68) + Math.abs(v2 - 73) + Math.abs(v3 - 57);
+
+        if (audioCtx) {
+          if (err === 0) {
+            triggerUnlock();
+          } else {
+            osc.frequency.setTargetAtTime(
+              60 + err * 2,
+              audioCtx.currentTime,
+              0.1,
+            );
+            noiseFilter.frequency.setTargetAtTime(
+              1000 + err * 10,
+              audioCtx.currentTime,
+              0.1,
+            );
+            masterGain.gain.setTargetAtTime(
+              0.15 + err / 200,
+              audioCtx.currentTime,
+              0.1,
+            );
+
+            if (err < 15) {
+              mainUi.classList.add("shake");
+            } else {
+              mainUi.classList.remove("shake");
+            }
+          }
+        }
+      }
+
+      function speakCreepy(text) {
+        if ("speechSynthesis" in window) {
+          const msg = new SpeechSynthesisUtterance();
+          msg.text = text;
+          msg.pitch = 0.1;
+          msg.rate = 0.6;
+          msg.volume = 1;
+          window.speechSynthesis.speak(msg);
+        }
+      }
+
+      function triggerUnlock() {
+        isUnlocked = true;
+        mainUi.classList.remove("shake");
+
+        let c1 =
+          parseInt(sl1.value) + parseInt(sl2.value) + parseInt(sl3.value) ===
+          198;
+        let c2 = parseInt(sl2.value) - parseInt(sl1.value) === 5;
+        let c3 = parseInt(sl3.value) * 2 - parseInt(sl2.value) === 41;
+
+        if (c1 && c2 && c3) {
+          sl1.disabled = true;
+          sl2.disabled = true;
+          sl3.disabled = true;
+
+          reels.forEach((r) => (r.style.animationDuration = "0.5s"));
+
+          osc.frequency.setTargetAtTime(20, audioCtx.currentTime, 2);
+          masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 3);
+
+          document.querySelectorAll(".val-display").forEach((d) => {
+            d.style.color = "#fff";
+            d.style.background = "#8b0000";
+            d.style.borderColor = "#8b0000";
+          });
+
+          setTimeout(() => {
+            speakCreepy("The signal is inside you now.");
+          }, 500);
+
+          setTimeout(() => {
+            flash.style.transition = "opacity 2s ease-in";
+            flash.style.opacity = "1";
+            setTimeout(() => {
+              window.location.href = "19.html";
+            }, 3000);
+          }, 3500);
+        }
+      }
+
+      [sl1, sl2, sl3].forEach((s) => s.addEventListener("input", updateSystem));
+    </script>
+  </body>
+</html>
