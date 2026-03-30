@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_017 // THE_TRINITY_BREACH</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap");
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: #050505;
+        background-image: radial-gradient(circle at center, #111 0%, #000 100%);
+        color: #e0e0e0;
+        font-family: "Share Tech Mono", monospace;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        user-select: none;
+      }
+
+      .scanlines {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(
+          rgba(18, 16, 16, 0) 50%,
+          rgba(0, 0, 0, 0.4) 50%
+        );
+        background-size: 100% 4px;
+        z-index: 100;
+        pointer-events: none;
+        opacity: 0.6;
+      }
+
+      #power-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #000;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 200;
+      }
+
+      .btn-power {
+        background: transparent;
+        border: 2px solid #a00;
+        color: #a00;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 2rem;
+        padding: 20px 40px;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 5px;
+        transition: all 0.3s;
+        box-shadow:
+          0 0 15px rgba(170, 0, 0, 0.2),
+          inset 0 0 15px rgba(170, 0, 0, 0.2);
+      }
+
+      .btn-power:hover {
+        background: #a00;
+        color: #000;
+        box-shadow:
+          0 0 30px rgba(170, 0, 0, 0.6),
+          inset 0 0 30px rgba(170, 0, 0, 0.6);
+      }
+
+      #main-interface {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        width: 90vw;
+        max-width: 1000px;
+        background: #151815;
+        border: 4px solid #2a302a;
+        border-radius: 8px;
+        padding: 40px;
+        box-shadow:
+          0 20px 50px rgba(0, 0, 0, 0.9),
+          inset 0 0 40px rgba(0, 0, 0, 0.8);
+        position: relative;
+        z-index: 10;
+        opacity: 0;
+        transition: opacity 1s ease;
+      }
+
+      .log-panel {
+        background: #0a0c0a;
+        border: 2px solid #1a201a;
+        padding: 30px;
+        font-family: "Courier Prime", monospace;
+        color: #8fa38f;
+        line-height: 1.6;
+        box-shadow: inset 0 0 20px #000;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .log-header {
+        color: #a32929;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-bottom: 2px solid #a32929;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+
+      .log-text p {
+        margin-bottom: 15px;
+      }
+
+      .highlight {
+        color: #d1d1d1;
+        font-weight: bold;
+      }
+
+      .control-panel {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .osc-display {
+        background: #050805;
+        border: 2px solid #3a4a3a;
+        border-radius: 50%;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        max-height: 300px;
+        margin: 0 auto;
+        position: relative;
+        box-shadow:
+          inset 0 0 30px #000,
+          0 0 20px rgba(58, 74, 58, 0.2);
+        overflow: hidden;
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .sliders {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-top: 30px;
+        background: #0a0c0a;
+        padding: 20px;
+        border: 2px solid #1a201a;
+      }
+
+      .slider-group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .slider-label {
+        width: 120px;
+        font-size: 1rem;
+        color: #6a7a6a;
+        letter-spacing: 2px;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        flex: 1;
+        margin: 0 15px;
+        background: transparent;
+      }
+
+      input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        background: #2a302a;
+        border-radius: 2px;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 24px;
+        width: 12px;
+        background: #8fa38f;
+        cursor: ew-resize;
+        margin-top: -10px;
+        border-radius: 2px;
+        box-shadow: 0 0 5px #000;
+      }
+
+      .slider-val {
+        width: 40px;
+        text-align: right;
+        font-size: 1.2rem;
+        color: #a32929;
+      }
+
+      #lock-status {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 1.5rem;
+        color: #a32929;
+        letter-spacing: 4px;
+        height: 30px;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.5;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      .shake-hard {
+        animation: shake-hard 0.1s infinite;
+      }
+
+      @keyframes shake-hard {
+        0% {
+          transform: translate(2px, 1px) rotate(0deg);
+        }
+        20% {
+          transform: translate(-3px, 0px) rotate(1deg);
+        }
+        40% {
+          transform: translate(1px, -1px) rotate(1deg);
+        }
+        60% {
+          transform: translate(-3px, 1px) rotate(0deg);
+        }
+        80% {
+          transform: translate(-1px, -1px) rotate(1deg);
+        }
+        100% {
+          transform: translate(1px, -2px) rotate(-1deg);
+        }
+      }
+
+      #whiteout {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #fff;
+        z-index: 300;
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scanlines"></div>
+    <div id="whiteout"></div>
+
+    <div id="power-overlay">
+      <button class="btn-power" id="btn-power">ENGAGE CONTAINMENT AUDIO</button>
+    </div>
+
+    <div id="main-interface">
+      <div class="log-panel">
+        <div class="log-header">TRINITY_SITE // JORNADA DEL MUERTO // 1945</div>
+        <div class="log-text">
+          <p>
+            Oppenheimer thought he was building a bomb. He was wrong. The Gadget
+            didn't just split the atom; it ruptured the membrane.
+          </p>
+          <p>
+            When the core went critical, the static we've been tracking for 30
+            years poured through the breach in its entirety. The radiation
+            signature is impossible. It isn't alpha or gamma. It's harmonic. It
+            is screaming.
+          </p>
+          <p>
+            I have isolated the containment frequencies. The dials must match
+            the anatomy of the detonation to force phase cancellation.
+          </p>
+          <p>
+            - The devil's element powering the core: exactly
+            <span class="highlight">ninety protons plus four</span>.
+          </p>
+          <p>
+            - The blast shattered the desert on the
+            <span class="highlight">sixteenth</span> sunrise of July.
+          </p>
+          <p>
+            - In the year of the falling suns: one less than
+            <span class="highlight">forty-six</span>.
+          </p>
+          <p>
+            Tune the hardware. Listen to the resonance. Silence the breach
+            before it expands.
+          </p>
+        </div>
+      </div>
+
+      <div class="control-panel">
+        <div class="osc-display">
+          <canvas id="radar" width="400" height="400"></canvas>
+        </div>
+
+        <div class="sliders">
+          <div class="slider-group">
+            <div class="slider-label">WAVELENGTH</div>
+            <input type="range" id="sl-w" min="0" max="100" value="0" />
+            <div class="slider-val" id="val-w">00</div>
+          </div>
+          <div class="slider-group">
+            <div class="slider-label">RESONANCE</div>
+            <input type="range" id="sl-r" min="0" max="100" value="0" />
+            <div class="slider-val" id="val-r">00</div>
+          </div>
+          <div class="slider-group">
+            <div class="slider-label">AMPLITUDE</div>
+            <input type="range" id="sl-a" min="0" max="100" value="0" />
+            <div class="slider-val" id="val-a">00</div>
+          </div>
+        </div>
+
+        <div id="lock-status">BREACH CRITICAL</div>
+      </div>
+    </div>
+
+    <script>
+      const btnPower = document.getElementById("btn-power");
+      const powerOverlay = document.getElementById("power-overlay");
+      const mainInterface = document.getElementById("main-interface");
+      const radarCanvas = document.getElementById("radar");
+      const ctx = radarCanvas.getContext("2d");
+      const slW = document.getElementById("sl-w");
+      const slR = document.getElementById("sl-r");
+      const slA = document.getElementById("sl-a");
+      const valW = document.getElementById("val-w");
+      const valR = document.getElementById("val-r");
+      const valA = document.getElementById("val-a");
+      const lockStatus = document.getElementById("lock-status");
+      const whiteout = document.getElementById("whiteout");
+
+      let audioCtx, osc1, osc2, lfo, gainNode;
+      let isUnlocked = false;
+      let time = 0;
+
+      function initAudio() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        osc1 = audioCtx.createOscillator();
+        osc2 = audioCtx.createOscillator();
+        lfo = audioCtx.createOscillator();
+        gainNode = audioCtx.createGain();
+
+        osc1.type = "sawtooth";
+        osc2.type = "square";
+        lfo.type = "sine";
+
+        lfo.frequency.value = 5;
+        const lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = 50;
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc1.frequency);
+
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        gainNode.gain.value = 0.05;
+
+        osc1.start();
+        osc2.start();
+        lfo.start();
+      }
+
+      btnPower.addEventListener("click", () => {
+        initAudio();
+        powerOverlay.style.display = "none";
+        mainInterface.style.opacity = "1";
+        updateSystem();
+        drawRadar();
+      });
+
+      function pad(n) {
+        return n.toString().padStart(2, "0");
+      }
+
+      function updateSystem() {
+        if (isUnlocked) return;
+
+        let w = parseInt(slW.value);
+        let r = parseInt(slR.value);
+        let a = parseInt(slA.value);
+
+        valW.innerText = pad(w);
+        valR.innerText = pad(r);
+        valA.innerText = pad(a);
+
+        let errW = Math.abs(w - 94);
+        let errR = Math.abs(r - 16);
+        let errA = Math.abs(a - 45);
+        let totalError = errW + errR + errA;
+
+        if (audioCtx) {
+          if (totalError === 0) {
+            triggerUnlock();
+          } else {
+            osc1.frequency.setTargetAtTime(
+              100 + totalError * 3,
+              audioCtx.currentTime,
+              0.1,
+            );
+            osc2.frequency.setTargetAtTime(
+              105 + totalError * 2.5,
+              audioCtx.currentTime,
+              0.1,
+            );
+            lfo.frequency.setTargetAtTime(
+              totalError * 0.5,
+              audioCtx.currentTime,
+              0.1,
+            );
+
+            if (totalError < 20) {
+              mainInterface.classList.add("shake-hard");
+              lockStatus.innerText = "CRITICAL MASS IMMINENT";
+            } else {
+              mainInterface.classList.remove("shake-hard");
+              lockStatus.innerText = "BREACH CRITICAL";
+            }
+          }
+        }
+      }
+
+      function triggerUnlock() {
+        isUnlocked = true;
+        mainInterface.classList.remove("shake-hard");
+
+        let c1 =
+          parseInt(slW.value) * 3 +
+            parseInt(slR.value) -
+            parseInt(slA.value) ===
+          253;
+        let c2 =
+          parseInt(slW.value) + parseInt(slR.value) + parseInt(slA.value) ===
+          155;
+
+        if (c1 && c2) {
+          lockStatus.style.color = "#4a9a4a";
+          lockStatus.innerText = "PHASE CANCELLATION ACHIEVED";
+
+          slW.disabled = true;
+          slR.disabled = true;
+          slA.disabled = true;
+
+          osc1.type = "sine";
+          osc2.type = "sine";
+          lfo.frequency.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+          osc1.frequency.setTargetAtTime(220, audioCtx.currentTime, 0.5);
+          osc2.frequency.setTargetAtTime(330, audioCtx.currentTime, 0.5);
+          gainNode.gain.setTargetAtTime(0.1, audioCtx.currentTime, 0.5);
+
+          setTimeout(() => {
+            gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 2);
+            whiteout.style.transition = "opacity 3s ease-in";
+            whiteout.style.opacity = "1";
+
+            setTimeout(() => {
+              window.location.href = "18.html";
+            }, 3500);
+          }, 3000);
+        }
+      }
+
+      [slW, slR, slA].forEach((slider) => {
+        slider.addEventListener("input", updateSystem);
+      });
+
+      function drawRadar() {
+        ctx.fillStyle = "rgba(5, 8, 5, 0.2)";
+        ctx.fillRect(0, 0, 400, 400);
+
+        if (!isUnlocked) {
+          time += 0.05;
+          let w = parseInt(slW.value);
+          let r = parseInt(slR.value);
+          let a = parseInt(slA.value);
+          let error = Math.abs(w - 94) + Math.abs(r - 16) + Math.abs(a - 45);
+
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(${150 + error}, ${50 - error}, 50, 0.8)`;
+          ctx.lineWidth = 2;
+
+          for (let i = 0; i < 360; i++) {
+            let rad = i * (Math.PI / 180);
+            let noise = (Math.random() - 0.5) * (error * 0.5);
+            let radius = 100 + Math.sin(rad * (r / 5) + time) * (a / 2) + noise;
+
+            let x = 200 + Math.cos(rad) * radius;
+            let y = 200 + Math.sin(rad) * radius;
+
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.strokeStyle = "#4a9a4a";
+          ctx.lineWidth = 4;
+          ctx.arc(200, 200, 120, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        requestAnimationFrame(drawRadar);
+      }
+    </script>
+  </body>
+</html>
