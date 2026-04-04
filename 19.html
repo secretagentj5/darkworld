@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODE_019 // THE_ORBITAL_ECHO</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+
+      body {
+        background-color: #050200;
+        color: #ffb000;
+        font-family: "VT323", monospace;
+        margin: 0;
+        padding: 20px;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow-x: hidden;
+        user-select: none;
+        box-sizing: border-box;
+      }
+
+      .crt-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(
+          circle,
+          rgba(0, 0, 0, 0) 50%,
+          rgba(0, 0, 0, 0.6) 100%
+        );
+        pointer-events: none;
+        z-index: 100;
+      }
+
+      .scanlines {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(
+          rgba(18, 16, 16, 0) 50%,
+          rgba(0, 0, 0, 0.4) 50%
+        );
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 99;
+      }
+
+      .flicker {
+        animation: text-flicker 0.15s infinite;
+      }
+
+      @keyframes text-flicker {
+        0% {
+          opacity: 0.95;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.9;
+        }
+      }
+
+      .terminal {
+        width: 100%;
+        max-width: 1100px;
+        min-height: 600px; /* FIXED ALIGNMENT ISSUE */
+        border: 2px solid #ffb000;
+        background: #0a0500;
+        box-shadow:
+          0 0 20px rgba(255, 176, 0, 0.2),
+          inset 0 0 30px rgba(255, 176, 0, 0.1);
+        display: flex;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 10;
+        text-shadow: 0 0 5px rgba(255, 176, 0, 0.8);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .left-panel {
+        flex: 1 1 350px;
+        padding: 30px;
+        border-right: 2px dashed #ffb000;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        background: rgba(255, 176, 0, 0.02);
+      }
+
+      .header {
+        font-size: 2rem;
+        border-bottom: 2px solid #ffb000;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        letter-spacing: 2px;
+      }
+
+      .lore {
+        font-size: 1.4rem;
+        line-height: 1.4;
+        margin-bottom: 20px;
+      }
+
+      .clues {
+        font-size: 1.3rem;
+        color: #cc8d00;
+        margin-top: auto;
+        padding: 15px;
+        border: 1px solid #ffb000;
+        background: rgba(255, 176, 0, 0.05);
+      }
+
+      .right-panel {
+        flex: 1.5 1 450px;
+        display: flex;
+        flex-direction: column;
+        padding: 30px;
+        box-sizing: border-box;
+        position: relative;
+        gap: 20px;
+      }
+
+      .printout-container {
+        flex: 1;
+        min-height: 350px; /* ENSURES GRID DOESN'T COLLAPSE */
+        border: 1px solid #ffb000;
+        background: #050200;
+        padding: 20px;
+        font-size: 1.5rem;
+        line-height: 1.2;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 0 20px #000;
+      }
+
+      .grid-row {
+        display: flex;
+        justify-content: space-between;
+        letter-spacing: 5px;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .dial-group {
+        flex: 1 1 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border: 1px solid #ffb000;
+        padding: 10px;
+        background: rgba(255, 176, 0, 0.05);
+      }
+
+      .dial-label {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+      }
+
+      input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        background: transparent;
+      }
+
+      input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 2px;
+        background: #ffb000;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 20px;
+        width: 10px;
+        background: #000;
+        border: 2px solid #ffb000;
+        cursor: ew-resize;
+        margin-top: -9px;
+      }
+
+      .dial-val {
+        margin-top: 10px;
+        font-size: 1.5rem;
+      }
+
+      #auth-box {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #0a0500;
+        border: 2px solid #ffb000;
+        padding: 20px;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0 0 20px #ffb000;
+        z-index: 50;
+        width: 80%;
+        max-width: 300px;
+      }
+
+      input[type="text"] {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid #ffb000;
+        color: #ffb000;
+        font-family: "VT323", monospace;
+        font-size: 2rem;
+        text-align: center;
+        outline: none;
+        text-transform: uppercase;
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .btn-init {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #0a0500;
+        border: 2px solid #ffb000;
+        color: #ffb000;
+        padding: 20px 40px;
+        font-family: "VT323", monospace;
+        font-size: 2rem;
+        cursor: pointer;
+        z-index: 200;
+        box-shadow: 0 0 20px rgba(255, 176, 0, 0.5);
+        transition: 0.2s;
+        text-align: center;
+      }
+
+      .btn-init:hover {
+        background: #ffb000;
+        color: #000;
+      }
+
+      .black-hole {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        width: 10px;
+        height: 10px;
+        background: #000;
+        border-radius: 50%;
+        box-shadow: 0 0 100px 50px #000;
+        z-index: 300;
+        pointer-events: none;
+      }
+
+      .highlight-char {
+        color: #fff;
+        text-shadow: 0 0 10px #fff;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        background: rgba(255, 176, 0, 0.3);
+      }
+
+      @media (max-width: 800px) {
+        .left-panel {
+          border-right: none;
+          border-bottom: 2px dashed #ffb000;
+        }
+      }
+    </style>
+  </head>
+  <body class="flicker">
+    <div class="crt-overlay"></div>
+    <div class="scanlines"></div>
+    <div class="black-hole" id="bh"></div>
+
+    <button class="btn-init" id="btn-start">CONNECT TO BIG EAR</button>
+
+    <div
+      class="terminal"
+      id="main-term"
+      style="filter: blur(8px); opacity: 0.5; pointer-events: none"
+    >
+      <div class="left-panel">
+        <div class="header">
+          OHIO_STATE_OBSERVATORY<br />SETI_ARCHIVE // 1977
+        </div>
+        <div class="lore">
+          The tapes didn't just break the minds of the test subjects. They
+          turned them into transmitters. The psychic payload was broadcasted
+          into the dark.<br /><br />
+          Years later, the Big Ear telescope picked up an echo bouncing off the
+          Sagittarius spiral arm. They thought it was extraterrestrial. It was
+          just our own rot coming home, amplified by the void.<br /><br />
+          The anomaly lasted exactly 72 seconds. The printout captured the shape
+          of the scream.
+        </div>
+
+        <div class="clues">
+          <strong>TARGETING TELEMETRY:</strong><br /><br />
+          > FREQ: The fundamental emission of neutral hydrogen (MHz).<br />
+          > R.A.: The right ascension of the Archer (Hours).<br />
+          > DEC.: The declination of the Archer (Degrees, negative).
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="printout-container" id="grid"></div>
+
+        <div id="auth-box">
+          <div style="font-size: 1.5rem; text-align: center">
+            ANOMALY DETECTED
+          </div>
+          <input
+            type="text"
+            id="sig-input"
+            maxlength="6"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+
+        <div class="controls">
+          <div class="dial-group">
+            <div class="dial-label">FREQ (MHz)</div>
+            <input type="range" id="sl-f" min="1300" max="1500" value="1300" />
+            <div class="dial-val" id="val-f">1300</div>
+          </div>
+          <div class="dial-group">
+            <div class="dial-label">R.A. (h)</div>
+            <input type="range" id="sl-r" min="0" max="24" value="0" />
+            <div class="dial-val" id="val-r">00</div>
+          </div>
+          <div class="dial-group">
+            <div class="dial-label">DEC. (°)</div>
+            <input type="range" id="sl-d" min="-90" max="90" value="0" />
+            <div class="dial-val" id="val-d">00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const btnStart = document.getElementById("btn-start");
+      const mainTerm = document.getElementById("main-term");
+      const grid = document.getElementById("grid");
+      const slF = document.getElementById("sl-f");
+      const slR = document.getElementById("sl-r");
+      const slD = document.getElementById("sl-d");
+      const valF = document.getElementById("val-f");
+      const valR = document.getElementById("val-r");
+      const valD = document.getElementById("val-d");
+      const authBox = document.getElementById("auth-box");
+      const sigInput = document.getElementById("sig-input");
+      const bh = document.getElementById("bh");
+
+      const ROWS = 12;
+      const COLS = 16;
+      let gridCells = [];
+      let audioCtx, osc, noise, noiseGain;
+      let intervalId;
+      let isLocked = false;
+
+      const wowSequence = ["6", "E", "Q", "U", "J", "5"];
+      const targetCol = 8;
+      const targetStartRow = 3;
+
+      function initAudio() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        osc = audioCtx.createOscillator();
+        osc.type = "sine";
+        const oscGain = audioCtx.createGain();
+        oscGain.gain.value = 0.0;
+        osc.connect(oscGain);
+        oscGain.connect(audioCtx.destination);
+        osc.start();
+
+        const bufferSize = audioCtx.sampleRate * 2;
+        const buffer = audioCtx.createBuffer(
+          1,
+          bufferSize,
+          audioCtx.sampleRate,
+        );
+        const output = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+
+        noiseGain = audioCtx.createGain();
+        noiseGain.gain.value = 0.15;
+
+        noise.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+        noise.start();
+
+        return oscGain;
+      }
+
+      let oGain;
+
+      btnStart.addEventListener("click", () => {
+        btnStart.style.display = "none";
+        mainTerm.style.filter = "none";
+        mainTerm.style.opacity = "1";
+        mainTerm.style.pointerEvents = "all";
+
+        oGain = initAudio();
+        buildGrid();
+        startGrid();
+        updateTelemetry();
+      });
+
+      function buildGrid() {
+        grid.innerHTML = "";
+        gridCells = [];
+        for (let r = 0; r < ROWS; r++) {
+          let rowDiv = document.createElement("div");
+          rowDiv.className = "grid-row";
+          let rowData = [];
+          for (let c = 0; c < COLS; c++) {
+            let cell = document.createElement("span");
+            cell.innerText = " ";
+            rowDiv.appendChild(cell);
+            rowData.push(cell);
+          }
+          grid.appendChild(rowDiv);
+          gridCells.push(rowData);
+        }
+      }
+
+      const chars = ["1", "2", "3", "4", " ", " ", " "];
+
+      function randomizeGrid(errorLevel) {
+        if (isLocked) return;
+
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            if (Math.random() < errorLevel / 300) {
+              gridCells[r][c].innerText =
+                chars[Math.floor(Math.random() * chars.length)];
+              gridCells[r][c].className = "";
+            }
+          }
+        }
+      }
+
+      function startGrid() {
+        intervalId = setInterval(() => {
+          let f = parseInt(slF.value);
+          let ra = parseInt(slR.value);
+          let d = parseInt(slD.value);
+          let error =
+            Math.abs(f - 1420) + Math.abs(ra - 19) + Math.abs(d - -27);
+          randomizeGrid(Math.max(10, error));
+        }, 100);
+      }
+
+      function updateTelemetry() {
+        if (isLocked) return;
+
+        let f = parseInt(slF.value);
+        let ra = parseInt(slR.value);
+        let d = parseInt(slD.value);
+
+        valF.innerText = f;
+        valR.innerText = ra.toString().padStart(2, "0");
+        valD.innerText = d;
+
+        let errF = Math.abs(f - 1420);
+        let errR = Math.abs(ra - 19);
+        let errD = Math.abs(d - -27);
+        let totalError = errF + errR + errD;
+
+        if (audioCtx) {
+          if (totalError === 0) {
+            lockSignal();
+          } else {
+            noiseGain.gain.setTargetAtTime(
+              Math.min(0.2, totalError / 200),
+              audioCtx.currentTime,
+              0.1,
+            );
+            oGain.gain.setTargetAtTime(
+              Math.max(0, 0.1 - totalError / 1000),
+              audioCtx.currentTime,
+              0.1,
+            );
+            osc.frequency.setTargetAtTime(
+              800 + totalError,
+              audioCtx.currentTime,
+              0.1,
+            );
+          }
+        }
+      }
+
+      function lockSignal() {
+        isLocked = true;
+        clearInterval(intervalId);
+
+        noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+        oGain.gain.setTargetAtTime(0.2, audioCtx.currentTime, 0.5);
+        osc.frequency.setTargetAtTime(1420, audioCtx.currentTime, 0.5);
+
+        slF.disabled = true;
+        slR.disabled = true;
+        slD.disabled = true;
+
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            gridCells[r][c].innerText = Math.random() > 0.8 ? "1" : " ";
+            gridCells[r][c].className = "";
+          }
+        }
+
+        for (let i = 0; i < wowSequence.length; i++) {
+          let r = targetStartRow + i;
+          let c = targetCol;
+          gridCells[r][c].innerText = wowSequence[i];
+          gridCells[r][c].classList.add("highlight-char");
+        }
+
+        setTimeout(() => {
+          authBox.style.display = "flex";
+          sigInput.focus();
+        }, 1000);
+      }
+
+      // FIXED THE MATH HASH!
+      const _x = [28, 58, 82, 90, 68, 26];
+      function _v(s) {
+        if (s.length !== 6) return false;
+        for (let i = 0; i < 6; i++) {
+          if (s.charCodeAt(i) * 2 - 80 !== _x[i]) return false;
+        }
+        return true;
+      }
+
+      sigInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const val = sigInput.value.trim().toUpperCase();
+          if (_v(val)) {
+            sigInput.disabled = true;
+            sigInput.style.color = "#fff";
+            sigInput.style.borderColor = "#fff";
+
+            oGain.gain.setTargetAtTime(0, audioCtx.currentTime, 2);
+            osc.frequency.setTargetAtTime(50, audioCtx.currentTime, 3);
+
+            bh.style.transition = "transform 3s cubic-bezier(.5,0,.1,1)";
+            bh.style.transform = "translate(-50%, -50%) scale(500)";
+
+            setTimeout(() => {
+              window.location.href = "20.html";
+            }, 3000);
+          } else {
+            sigInput.value = "";
+            authBox.classList.remove("flicker");
+            void authBox.offsetWidth;
+            authBox.style.animation = "text-flicker 0.05s 5";
+          }
+        }
+      });
+
+      [slF, slR, slD].forEach((s) =>
+        s.addEventListener("input", updateTelemetry),
+      );
+    </script>
+  </body>
+</html>
